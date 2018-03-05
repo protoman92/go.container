@@ -1,7 +1,5 @@
 package gomap
 
-import "sync"
-
 type containsRequest struct {
 	key     Key
 	foundCh chan<- bool
@@ -32,6 +30,8 @@ type setRequest struct {
 type ConcurrentMap interface {
 	Map
 	UnderlyingMap() Map
+	UnderlyingMapAsync(callback func(Map))
+	UnderlyingStorageAsync(callback func(map[Key]Value))
 	ClearAsync(callback func())
 	ContainsAsync(key Key, callback func(bool))
 	DeleteAsync(key Key, callback func(int))
@@ -43,30 +43,45 @@ type ConcurrentMap interface {
 
 // This is a wrapper over a Map that provides thread-safe operations.
 type concurrentMap struct {
-	mutex      sync.RWMutex
-	storage    Map
-	clearCh    chan chan interface{}
-	containsCh chan *containsRequest
-	deleteCh   chan *deleteRequest
-	lenCh      chan chan int
-	getCh      chan *getRequest
-	setCh      chan *setRequest
+	storage         Map
+	accessMapCh     chan chan Map
+	accessStorageCh chan chan map[Key]Value
+	clearCh         chan chan interface{}
+	containsCh      chan *containsRequest
+	deleteCh        chan *deleteRequest
+	lenCh           chan chan int
+	getCh           chan *getRequest
+	setCh           chan *setRequest
 }
 
 func (cm *concurrentMap) UnderlyingMap() Map {
-	cm.mutex.RLock()
-	defer cm.mutex.RUnlock()
-	return cm.storage
+	accessCh := make(chan Map, 0)
+	cm.accessMapCh <- accessCh
+	return <-accessCh
+}
+
+func (cm *concurrentMap) UnderlyingMapAsync(callback func(Map)) {
+	go func() {
+		storage := cm.UnderlyingMap()
+		callback(storage)
+	}()
+}
+
+func (cm *concurrentMap) UnderlyingStorageAsync(callback func(map[Key]Value)) {
+	go func() {
+		storage := cm.UnderlyingStorage()
+		callback(storage)
+	}()
 }
 
 func (cm *concurrentMap) UnderlyingStorage() map[Key]Value {
-	cm.mutex.RLock()
-	defer cm.mutex.RUnlock()
-	return cm.storage.UnderlyingStorage()
+	accessCh := make(chan map[Key]Value, 0)
+	cm.accessStorageCh <- accessCh
+	return <-accessCh
 }
 
 func (cm *concurrentMap) Clear() {
-	requestCh := make(chan interface{})
+	requestCh := make(chan interface{}, 0)
 	cm.clearCh <- requestCh
 	<-requestCh
 }
@@ -79,7 +94,7 @@ func (cm *concurrentMap) ClearAsync(callback func()) {
 }
 
 func (cm *concurrentMap) Contains(key Key) bool {
-	foundCh := make(chan bool)
+	foundCh := make(chan bool, 0)
 	cm.containsCh <- &containsRequest{key: key, foundCh: foundCh}
 	return <-foundCh
 }
@@ -92,7 +107,7 @@ func (cm *concurrentMap) ContainsAsync(key Key, callback func(bool)) {
 }
 
 func (cm *concurrentMap) Delete(key Key) int {
-	lenCh := make(chan int)
+	lenCh := make(chan int, 0)
 	cm.deleteCh <- &deleteRequest{key: key, lenCh: lenCh}
 	return <-lenCh
 }
@@ -130,7 +145,7 @@ func (cm *concurrentMap) IsEmptyAsync(callback func(bool)) {
 }
 
 func (cm *concurrentMap) Length() int {
-	requestCh := make(chan int)
+	requestCh := make(chan int, 0)
 	cm.lenCh <- requestCh
 	return <-requestCh
 }
@@ -158,6 +173,12 @@ func (cm *concurrentMap) SetAsync(key Key, value Value, callback func(int)) {
 func (cm *concurrentMap) loopMap() {
 	for {
 		select {
+		case ar := <-cm.accessMapCh:
+			ar <- cm.storage
+
+		case ar := <-cm.accessStorageCh:
+			ar <- cm.storage.UnderlyingStorage()
+
 		case cr := <-cm.clearCh:
 			cm.storage.Clear()
 			cr <- true
@@ -184,13 +205,15 @@ func (cm *concurrentMap) loopMap() {
 // NewConcurrentMap returns a new ConcurrentMap.
 func NewConcurrentMap(storage Map) ConcurrentMap {
 	cm := &concurrentMap{
-		storage:    storage,
-		clearCh:    make(chan chan interface{}, 0),
-		containsCh: make(chan *containsRequest, 0),
-		deleteCh:   make(chan *deleteRequest, 0),
-		lenCh:      make(chan chan int, 0),
-		getCh:      make(chan *getRequest, 0),
-		setCh:      make(chan *setRequest, 0),
+		storage:         storage,
+		accessMapCh:     make(chan chan Map, 0),
+		accessStorageCh: make(chan chan map[Key]Value, 0),
+		clearCh:         make(chan chan interface{}, 0),
+		containsCh:      make(chan *containsRequest, 0),
+		deleteCh:        make(chan *deleteRequest, 0),
+		lenCh:           make(chan chan int, 0),
+		getCh:           make(chan *getRequest, 0),
+		setCh:           make(chan *setRequest, 0),
 	}
 
 	go cm.loopMap()

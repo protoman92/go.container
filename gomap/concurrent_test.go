@@ -9,6 +9,7 @@ import (
 
 func Test_ExecutingBasicOpsOnConcurrentMap_ShouldWork(t *testing.T) {
 	/// Setup
+	t.Parallel()
 	cm := NewDefaultBasicConcurrentMap()
 	key := "Key"
 	value := "Value"
@@ -45,10 +46,13 @@ func Test_ExecutingBasicOpsOnConcurrentMap_ShouldWork(t *testing.T) {
 	if !cm.IsEmpty() {
 		t.Errorf("Should be empty")
 	}
+
+	fmt.Printf("Final storage: %v\n", cm.UnderlyingStorage())
 }
 
 func Test_ExecutingConcurrentOpsOnConcurrentMap_ShouldWork(t *testing.T) {
 	/// Setup
+	t.Parallel()
 	cm := NewDefaultBasicConcurrentMap()
 	keys := make([]string, 1000)
 
@@ -66,36 +70,13 @@ func Test_ExecutingConcurrentOpsOnConcurrentMap_ShouldWork(t *testing.T) {
 	}
 
 	/// When
-	go func() {
-		for _, key := range keys {
-			accessWaitGroup().Add(1)
-
-			go func(key string) {
-				cm.SetAsync(key, key, func(len int) {
-					accessWaitGroup().Done()
-				})
-			}(key)
-		}
-	}()
-
+	// Modify
 	go func() {
 		for _, key := range keys {
 			accessWaitGroup().Add(1)
 
 			go func(key string) {
 				cm.GetAsync(key, func(value Value, found bool) {
-					accessWaitGroup().Done()
-				})
-			}(key)
-		}
-	}()
-
-	go func() {
-		for _, key := range keys {
-			accessWaitGroup().Add(1)
-
-			go func(key string) {
-				cm.ContainsAsync(key, func(found bool) {
 					accessWaitGroup().Done()
 				})
 			}(key)
@@ -126,6 +107,31 @@ func Test_ExecutingConcurrentOpsOnConcurrentMap_ShouldWork(t *testing.T) {
 		}
 	}()
 
+	// Get
+	go func() {
+		for _, key := range keys {
+			accessWaitGroup().Add(1)
+
+			go func(key string) {
+				cm.SetAsync(key, key, func(len int) {
+					accessWaitGroup().Done()
+				})
+			}(key)
+		}
+	}()
+
+	go func() {
+		for _, key := range keys {
+			accessWaitGroup().Add(1)
+
+			go func(key string) {
+				cm.ContainsAsync(key, func(found bool) {
+					accessWaitGroup().Done()
+				})
+			}(key)
+		}
+	}()
+
 	go func() {
 		for i := 0; i < len(keys); i++ {
 			accessWaitGroup().Add(1)
@@ -144,6 +150,31 @@ func Test_ExecutingConcurrentOpsOnConcurrentMap_ShouldWork(t *testing.T) {
 
 			go func() {
 				cm.IsEmptyAsync(func(empty bool) {
+					accessWaitGroup().Done()
+				})
+			}()
+		}
+	}()
+
+	// Access
+	go func() {
+		for i := 0; i < len(keys); i++ {
+			accessWaitGroup().Add(1)
+
+			go func() {
+				cm.UnderlyingMapAsync(func(storage Map) {
+					accessWaitGroup().Done()
+				})
+			}()
+		}
+	}()
+
+	go func() {
+		for i := 0; i < len(keys); i++ {
+			accessWaitGroup().Add(1)
+
+			go func() {
+				cm.UnderlyingStorageAsync(func(storage map[Key]Value) {
 					accessWaitGroup().Done()
 				})
 			}()
