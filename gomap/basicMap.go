@@ -5,11 +5,11 @@ import (
 )
 
 // KeyStringer represents a key-string converter.
-type KeyStringer func(interface{}) string
+type KeyStringer func(Key) string
 
 type basicMap struct {
 	BasicMapParams
-	storage map[string]interface{}
+	storage map[string]Value
 }
 
 // BasicMapParams represents all the required parameters to build a BasicMap.
@@ -22,7 +22,7 @@ func (b *basicMap) String() string {
 	return fmt.Sprint(b.storage)
 }
 
-func (b *basicMap) convertKey(key interface{}) string {
+func (b *basicMap) convertKey(key Key) string {
 	if b.ConvertKeyFn != nil {
 		return b.ConvertKeyFn(key)
 	}
@@ -31,8 +31,8 @@ func (b *basicMap) convertKey(key interface{}) string {
 }
 
 // Returns a copy of the underlying storage.
-func (b *basicMap) UnderlyingStorage() map[interface{}]interface{} {
-	storage := make(map[interface{}]interface{})
+func (b *basicMap) UnderlyingStorage() map[Key]Value {
+	storage := make(map[Key]Value)
 
 	for key, value := range b.storage {
 		storage[key] = value
@@ -47,28 +47,37 @@ func (b *basicMap) Clear() {
 	}
 }
 
-func (b *basicMap) Delete(key interface{}) int {
+func (b *basicMap) Contains(key Key) bool {
+	_, found := b.storage[b.convertKey(key)]
+	return found
+}
+
+func (b *basicMap) Delete(key Key) int {
 	delete(b.storage, b.convertKey(key))
 	return len(b.storage)
 }
 
-func (b *basicMap) Get(key interface{}) (interface{}, bool) {
+func (b *basicMap) Get(key Key) (Value, bool) {
 	v, ok := b.storage[b.convertKey(key)]
 	return v, ok
+}
+
+func (b *basicMap) IsEmpty() bool {
+	return b.Length() == 0
 }
 
 func (b *basicMap) Length() int {
 	return len(b.storage)
 }
 
-func (b *basicMap) Set(key interface{}, value interface{}) int {
+func (b *basicMap) Set(key Key, value Value) int {
 	b.storage[b.convertKey(key)] = value
 	return len(b.storage)
 }
 
 // NewBasicMap creates a new BasicMap.
 func NewBasicMap(params BasicMapParams) Map {
-	storage := make(map[string]interface{})
+	storage := make(map[string]Value)
 	return &basicMap{BasicMapParams: params, storage: storage}
 }
 

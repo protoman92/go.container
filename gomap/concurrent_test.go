@@ -7,6 +7,46 @@ import (
 	"testing"
 )
 
+func Test_ExecutingBasicOpsOnConcurrentMap_ShouldWork(t *testing.T) {
+	/// Setup
+	cm := NewDefaultBasicConcurrentMap()
+	key := "Key"
+	value := "Value"
+
+	/// When & Then
+	cm.Set(key, value)
+
+	if !cm.Contains(key) {
+		t.Errorf("Should contain %v", key)
+	}
+
+	value1, found := cm.Get(key)
+
+	if value1 != value || !found {
+		t.Errorf("Should contain %v with value %v", key, value)
+	}
+
+	cm.Delete(key)
+	_, found1 := cm.Get(key)
+
+	if found1 && cm.Contains(key) {
+		t.Errorf("Should not contain %v", key)
+	}
+
+	cm.Set(key, value)
+	length := cm.Length()
+
+	if length != 1 {
+		t.Errorf("Should have length 1, but got %d", length)
+	}
+
+	cm.Clear()
+
+	if !cm.IsEmpty() {
+		t.Errorf("Should be empty")
+	}
+}
+
 func Test_ExecutingConcurrentOpsOnConcurrentMap_ShouldWork(t *testing.T) {
 	/// Setup
 	cm := NewDefaultBasicConcurrentMap()
@@ -43,7 +83,19 @@ func Test_ExecutingConcurrentOpsOnConcurrentMap_ShouldWork(t *testing.T) {
 			accessWaitGroup().Add(1)
 
 			go func(key string) {
-				cm.GetAsync(key, func(value interface{}, found bool) {
+				cm.GetAsync(key, func(value Value, found bool) {
+					accessWaitGroup().Done()
+				})
+			}(key)
+		}
+	}()
+
+	go func() {
+		for _, key := range keys {
+			accessWaitGroup().Add(1)
+
+			go func(key string) {
+				cm.ContainsAsync(key, func(found bool) {
 					accessWaitGroup().Done()
 				})
 			}(key)
@@ -80,6 +132,18 @@ func Test_ExecutingConcurrentOpsOnConcurrentMap_ShouldWork(t *testing.T) {
 
 			go func() {
 				cm.LengthAsync(func(len int) {
+					accessWaitGroup().Done()
+				})
+			}()
+		}
+	}()
+
+	go func() {
+		for i := 0; i < len(keys); i++ {
+			accessWaitGroup().Add(1)
+
+			go func() {
+				cm.IsEmptyAsync(func(empty bool) {
 					accessWaitGroup().Done()
 				})
 			}()
