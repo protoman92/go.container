@@ -7,10 +7,9 @@ import (
 	"testing"
 )
 
-func Test_ExecutingBasicOpsOnConcurrentMap_ShouldWork(t *testing.T) {
+func testExecuteBasicsOpsOnConcMap(t *testing.T, cm ConcurrentMap) {
 	/// Setup
 	t.Parallel()
-	cm := NewDefaultBasicConcurrentMap()
 	key := "Key"
 	value := "Value"
 
@@ -50,10 +49,15 @@ func Test_ExecutingBasicOpsOnConcurrentMap_ShouldWork(t *testing.T) {
 	fmt.Printf("Final storage: %v\n", cm.UnderlyingStorage())
 }
 
-func Test_ExecutingConcurrentOpsOnConcurrentMap_ShouldWork(t *testing.T) {
+func TestExecutingBasicOpsOnChannelConcurrentMap(t *testing.T) {
+	bm := NewDefaultBasicMap()
+	cm := NewChannelConcurrentMap(bm)
+	testExecuteBasicsOpsOnConcMap(t, cm)
+}
+
+func testExecutingConcurrentOpsOnConcurrentMap(t *testing.T, cm ConcurrentMap) {
 	/// Setup
 	t.Parallel()
-	cm := NewDefaultBasicConcurrentMap()
 	keys := make([]string, 1000)
 
 	for ix := range keys {
@@ -162,18 +166,6 @@ func Test_ExecutingConcurrentOpsOnConcurrentMap_ShouldWork(t *testing.T) {
 			accessWaitGroup().Add(1)
 
 			go func() {
-				cm.UnderlyingMapAsync(func(storage Map) {
-					accessWaitGroup().Done()
-				})
-			}()
-		}
-	}()
-
-	go func() {
-		for i := 0; i < len(keys); i++ {
-			accessWaitGroup().Add(1)
-
-			go func() {
 				cm.UnderlyingStorageAsync(func(storage map[Key]Value) {
 					accessWaitGroup().Done()
 				})
@@ -188,6 +180,11 @@ func Test_ExecutingConcurrentOpsOnConcurrentMap_ShouldWork(t *testing.T) {
 	// mode will automatically fail if concurrent operations are not performed
 	// correctly.
 	fmt.Printf("Final length: %d\n", cm.Length())
-	fmt.Printf("Final map: %v\n", cm.UnderlyingMap())
 	fmt.Printf("Final storage: %v\n", cm.UnderlyingStorage())
+}
+
+func TestExecutingConcurrentOpsOnChannelConcurrentMap(t *testing.T) {
+	bm := NewDefaultBasicMap()
+	cm := NewChannelConcurrentMap(bm)
+	testExecutingConcurrentOpsOnConcurrentMap(t, cm)
 }
