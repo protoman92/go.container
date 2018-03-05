@@ -54,6 +54,7 @@ type concurrentMap struct {
 	setCh           chan *setRequest
 }
 
+// This operation blocks until the underlying Map is received.
 func (cm *concurrentMap) UnderlyingMap() Map {
 	accessCh := make(chan Map, 0)
 	cm.accessMapCh <- accessCh
@@ -67,6 +68,7 @@ func (cm *concurrentMap) UnderlyingMapAsync(callback func(Map)) {
 	}()
 }
 
+// This operation blocks until the underlying storage is received.
 func (cm *concurrentMap) UnderlyingStorageAsync(callback func(map[Key]Value)) {
 	go func() {
 		storage := cm.UnderlyingStorage()
@@ -80,6 +82,7 @@ func (cm *concurrentMap) UnderlyingStorage() map[Key]Value {
 	return <-accessCh
 }
 
+// This operation blocks until some result is received.
 func (cm *concurrentMap) Clear() {
 	requestCh := make(chan interface{}, 0)
 	cm.clearCh <- requestCh
@@ -93,6 +96,7 @@ func (cm *concurrentMap) ClearAsync(callback func()) {
 	}()
 }
 
+// This operation blocks until a value is received.
 func (cm *concurrentMap) Contains(key Key) bool {
 	foundCh := make(chan bool, 0)
 	cm.containsCh <- &containsRequest{key: key, foundCh: foundCh}
@@ -106,6 +110,7 @@ func (cm *concurrentMap) ContainsAsync(key Key, callback func(bool)) {
 	}()
 }
 
+// This operation blocks until some value is received.
 func (cm *concurrentMap) Delete(key Key) int {
 	lenCh := make(chan int, 0)
 	cm.deleteCh <- &deleteRequest{key: key, lenCh: lenCh}
@@ -119,6 +124,7 @@ func (cm *concurrentMap) DeleteAsync(key Key, callback func(int)) {
 	}()
 }
 
+// This operaton blocks until some value is received.
 func (cm *concurrentMap) Get(key Key) (Value, bool) {
 	valueCh := make(chan *getResult, 0)
 	cm.getCh <- &getRequest{key: key, valueCh: valueCh}
@@ -133,6 +139,7 @@ func (cm *concurrentMap) GetAsync(key Key, callback func(Value, bool)) {
 	}()
 }
 
+// This operaton blocks until some value is received.
 func (cm *concurrentMap) IsEmpty() bool {
 	return cm.Length() == 0
 }
@@ -144,6 +151,7 @@ func (cm *concurrentMap) IsEmptyAsync(callback func(bool)) {
 	}()
 }
 
+// This operaton blocks until some value is received.
 func (cm *concurrentMap) Length() int {
 	requestCh := make(chan int, 0)
 	cm.lenCh <- requestCh
@@ -157,6 +165,7 @@ func (cm *concurrentMap) LengthAsync(callback func(int)) {
 	}()
 }
 
+// This operaton blocks until some value is received.
 func (cm *concurrentMap) Set(key Key, value Value) int {
 	lenCh := make(chan int, 0)
 	cm.setCh <- &setRequest{key: key, value: value, lenCh: lenCh}
