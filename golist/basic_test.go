@@ -7,10 +7,14 @@ import (
 
 func testListBasicOps(t *testing.T, list List) {
 	/// Setup & When & Then
-	list.Add(1)
-	list.Add(2)
-	list.Add(3)
-	list.Add(4)
+	add1 := list.Add(1)
+	add2 := list.Add(2)
+	add3 := list.Add(3)
+	add4 := list.Add(4)
+
+	if add1 != 1 || add2 != 1 || add3 != 1 || add4 != 1 {
+		t.Errorf("Added wrong element count")
+	}
 
 	getValue1, getFound1 := list.Get(0)
 	getValue2, getFound2 := list.Get(list.Length())
@@ -44,7 +48,11 @@ func testListBasicOps(t *testing.T, list List) {
 		slice[ix] = strconv.Itoa(ix)
 	}
 
-	list.AddAll(slice...)
+	addAll1 := list.AddAll(slice...)
+
+	if addAll1 != 1000 {
+		t.Errorf("Added wrong element count")
+	}
 
 	if list.Length() != 1003 {
 		t.Errorf("Should have 1003 elements")
@@ -55,16 +63,31 @@ func testListBasicOps(t *testing.T, list List) {
 	if deletedFound2 {
 		t.Errorf("Should not have found element")
 	}
+
+	list.Clear()
+
+	if list.Length() != 0 {
+		t.Errorf("Should not have any element")
+	}
 }
 
 func testListAllOps(t *testing.T, listFn func() List) {
 	testListBasicOps(t, listFn())
 }
 
-func TestBasicListAllOps(t *testing.T) {
+func TestSliceListAllOps(t *testing.T) {
 	t.Parallel()
 
 	testListAllOps(t, func() List {
-		return NewBasicList()
+		return NewSliceList()
+	})
+}
+
+func TestLockConcurrentListAllOps(t *testing.T) {
+	t.Parallel()
+
+	testListAllOps(t, func() List {
+		sl := NewSliceList()
+		return NewLockConcurrentList(sl)
 	})
 }

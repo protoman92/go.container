@@ -30,17 +30,6 @@ func (b *basicMap) convertKey(key Key) string {
 	return fmt.Sprint(key)
 }
 
-// Returns a copy of the underlying storage.
-func (b *basicMap) UnderlyingStorage() map[Key]Value {
-	storage := make(map[Key]Value)
-
-	for key, value := range b.storage {
-		storage[key] = value
-	}
-
-	return storage
-}
-
 func (b *basicMap) Clear() {
 	for key := range b.storage {
 		delete(b.storage, key)
@@ -62,10 +51,6 @@ func (b *basicMap) Delete(key Key) bool {
 func (b *basicMap) Get(key Key) (Value, bool) {
 	v, ok := b.storage[b.convertKey(key)]
 	return v, ok
-}
-
-func (b *basicMap) IsEmpty() bool {
-	return b.Length() == 0
 }
 
 func (b *basicMap) Length() int {

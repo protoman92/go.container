@@ -1,7 +1,6 @@
 package gomap
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -38,12 +37,6 @@ func testMapBasicOps(tb testing.TB, m Map) {
 	}
 
 	m.Clear()
-
-	if !m.IsEmpty() {
-		tb.Errorf("Should be empty")
-	}
-
-	fmt.Printf("Final storage: %v\n", m.UnderlyingStorage())
 }
 
 func testMapAllOps(t *testing.T, mapFn func() Map) {

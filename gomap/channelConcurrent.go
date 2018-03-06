@@ -1,5 +1,14 @@
 package gomap
 
+import (
+	"fmt"
+	"reflect"
+)
+
+type clearRequest struct {
+	doneCh chan<- interface{}
+}
+
 type containsRequest struct {
 	key     Key
 	foundCh chan<- bool
@@ -8,6 +17,10 @@ type containsRequest struct {
 type deleteRequest struct {
 	key   Key
 	lenCh chan<- bool
+}
+
+type lenRequest struct {
+	lenCh chan<- int
 }
 
 type getResult struct {
@@ -32,109 +45,83 @@ type setRequest struct {
 }
 
 type channelConcurrentMap struct {
-	storage         Map
-	accessMapCh     chan chan Map
-	accessStorageCh chan chan map[Key]Value
-	clearCh         chan chan interface{}
-	containsCh      chan *containsRequest
-	deleteCh        chan *deleteRequest
-	lenCh           chan chan int
-	getCh           chan *getRequest
-	setCh           chan *setRequest
-}
-
-// This operation blocks until the underlying storage is received.
-func (ccm *channelConcurrentMap) UnderlyingStorage() map[Key]Value {
-	accessCh := make(chan map[Key]Value, 0)
-	ccm.accessStorageCh <- accessCh
-	return <-accessCh
+	storage   Map
+	requestCh chan interface{}
 }
 
 // This operation blocks until some result is received.
 func (ccm *channelConcurrentMap) Clear() {
 	requestCh := make(chan interface{}, 0)
-	ccm.clearCh <- requestCh
+	ccm.requestCh <- &clearRequest{doneCh: requestCh}
 	<-requestCh
 }
 
 // This operation blocks until a value is received.
 func (ccm *channelConcurrentMap) Contains(key Key) bool {
 	foundCh := make(chan bool, 0)
-	ccm.containsCh <- &containsRequest{key: key, foundCh: foundCh}
+	ccm.requestCh <- &containsRequest{key: key, foundCh: foundCh}
 	return <-foundCh
 }
 
 // This operation blocks until some value is received.
 func (ccm *channelConcurrentMap) Delete(key Key) bool {
 	lenCh := make(chan bool, 0)
-	ccm.deleteCh <- &deleteRequest{key: key, lenCh: lenCh}
+	ccm.requestCh <- &deleteRequest{key: key, lenCh: lenCh}
 	return <-lenCh
 }
 
 // This operaton blocks until some value is received.
 func (ccm *channelConcurrentMap) Get(key Key) (Value, bool) {
 	valueCh := make(chan *getResult, 0)
-	ccm.getCh <- &getRequest{key: key, valueCh: valueCh}
+	ccm.requestCh <- &getRequest{key: key, valueCh: valueCh}
 	result := <-valueCh
 	return result.element, result.found
 }
 
 // This operaton blocks until some value is received.
-func (ccm *channelConcurrentMap) IsEmpty() bool {
-	return ccm.Length() == 0
-}
-
-// This operaton blocks until some value is received.
 func (ccm *channelConcurrentMap) Length() int {
 	requestCh := make(chan int, 0)
-	ccm.lenCh <- requestCh
+	ccm.requestCh <- &lenRequest{lenCh: requestCh}
 	return <-requestCh
 }
 
 // This operaton blocks until some value is received.
 func (ccm *channelConcurrentMap) Set(key Key, value Value) (Value, bool) {
 	lenCh := make(chan *setResult, 0)
-	ccm.setCh <- &setRequest{key: key, value: value, lenCh: lenCh}
+	ccm.requestCh <- &setRequest{key: key, value: value, lenCh: lenCh}
 	result := <-lenCh
 	return result.element, result.found
-}
-
-// This operation blocks until the underlying Map is received.
-func (ccm *channelConcurrentMap) UnderlyingMap() Map {
-	accessCh := make(chan Map, 0)
-	ccm.accessMapCh <- accessCh
-	return <-accessCh
 }
 
 func (ccm *channelConcurrentMap) loopMap() {
 	for {
 		select {
-		case ar := <-ccm.accessMapCh:
-			ar <- ccm.storage
+		case request := <-ccm.requestCh:
+			switch request := request.(type) {
+			case *clearRequest:
+				ccm.storage.Clear()
+				request.doneCh <- true
 
-		case ar := <-ccm.accessStorageCh:
-			ar <- ccm.storage.UnderlyingStorage()
+			case *containsRequest:
+				request.foundCh <- ccm.storage.Contains(request.key)
 
-		case cr := <-ccm.clearCh:
-			ccm.storage.Clear()
-			cr <- true
+			case *deleteRequest:
+				request.lenCh <- ccm.storage.Delete(request.key)
 
-		case cr := <-ccm.containsCh:
-			cr.foundCh <- ccm.storage.Contains(cr.key)
+			case *lenRequest:
+				request.lenCh <- ccm.storage.Length()
 
-		case dr := <-ccm.deleteCh:
-			dr.lenCh <- ccm.storage.Delete(dr.key)
+			case *getRequest:
+				element, found := ccm.storage.Get(request.key)
+				request.valueCh <- &getResult{element: element, found: found}
 
-		case lr := <-ccm.lenCh:
-			lr <- ccm.storage.Length()
+			case *setRequest:
+				element, found := ccm.storage.Set(request.key, request.value)
+				request.lenCh <- &setResult{element: element, found: found}
 
-		case gr := <-ccm.getCh:
-			element, found := ccm.storage.Get(gr.key)
-			gr.valueCh <- &getResult{element: element, found: found}
-
-		case sr := <-ccm.setCh:
-			element, found := ccm.storage.Set(sr.key, sr.value)
-			sr.lenCh <- &setResult{element: element, found: found}
+			default:
+				panic(fmt.Sprintf("Unrecognized req type %v", reflect.TypeOf(request)))
+			}
 		}
 	}
 }
@@ -142,15 +129,8 @@ func (ccm *channelConcurrentMap) loopMap() {
 // NewChannelConcurrentMap returns a new channel-based ConcurrentMap.
 func NewChannelConcurrentMap(storage Map) ConcurrentMap {
 	cm := &channelConcurrentMap{
-		storage:         storage,
-		accessMapCh:     make(chan chan Map, 0),
-		accessStorageCh: make(chan chan map[Key]Value, 0),
-		clearCh:         make(chan chan interface{}, 0),
-		containsCh:      make(chan *containsRequest, 0),
-		deleteCh:        make(chan *deleteRequest, 0),
-		lenCh:           make(chan chan int, 0),
-		getCh:           make(chan *getRequest, 0),
-		setCh:           make(chan *setRequest, 0),
+		storage:   storage,
+		requestCh: make(chan interface{}, 1),
 	}
 
 	go cm.loopMap()

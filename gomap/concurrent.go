@@ -3,12 +3,10 @@ package gomap
 // ConcurrentMap represents a thread-safe Map.
 type ConcurrentMap interface {
 	Map
-	UnderlyingStorageAsync(callback func(map[Key]Value))
 	ClearAsync(callback func())
 	ContainsAsync(key Key, callback func(bool))
 	DeleteAsync(key Key, callback func(bool))
 	GetAsync(key Key, callback func(Value, bool))
-	IsEmptyAsync(callback func(bool))
 	LengthAsync(callback func(int))
 	SetAsync(key Key, value Value, callback func(Value, bool))
 }
@@ -16,48 +14,13 @@ type ConcurrentMap interface {
 // This is a thin wrapper over a thread-safe Map in order to provide additional
 // funtionalities (such as async operations).
 type concurrentMap struct {
-	storage Map
-}
-
-func (cm *concurrentMap) UnderlyingStorage() map[Key]Value {
-	return cm.storage.UnderlyingStorage()
-}
-
-func (cm *concurrentMap) Contains(key Key) bool {
-	return cm.storage.Contains(key)
-}
-
-func (cm *concurrentMap) Clear() {
-	cm.storage.Clear()
-}
-
-func (cm *concurrentMap) Delete(key Key) bool {
-	return cm.storage.Delete(key)
-}
-
-func (cm *concurrentMap) IsEmpty() bool {
-	return cm.storage.IsEmpty()
-}
-
-func (cm *concurrentMap) Length() int {
-	return cm.storage.Length()
-}
-
-func (cm *concurrentMap) Set(key Key, value Value) (Value, bool) {
-	return cm.storage.Set(key, value)
+	Map
 }
 
 func (cm *concurrentMap) ContainsAsync(key Key, callback func(bool)) {
 	go func() {
 		found := cm.Contains(key)
 		callback(found)
-	}()
-}
-
-func (cm *concurrentMap) UnderlyingStorageAsync(callback func(map[Key]Value)) {
-	go func() {
-		storage := cm.UnderlyingStorage()
-		callback(storage)
 	}()
 }
 
@@ -75,21 +38,10 @@ func (cm *concurrentMap) DeleteAsync(key Key, callback func(bool)) {
 	}()
 }
 
-func (cm *concurrentMap) Get(key Key) (Value, bool) {
-	return cm.storage.Get(key)
-}
-
 func (cm *concurrentMap) GetAsync(key Key, callback func(Value, bool)) {
 	go func() {
 		v, found := cm.Get(key)
 		callback(v, found)
-	}()
-}
-
-func (cm *concurrentMap) IsEmptyAsync(callback func(bool)) {
-	go func() {
-		isEmpty := cm.IsEmpty()
-		callback(isEmpty)
 	}()
 }
 
@@ -108,5 +60,5 @@ func (cm *concurrentMap) SetAsync(key Key, value Value, callback func(Value, boo
 }
 
 func newConcurrentMap(cm Map) ConcurrentMap {
-	return &concurrentMap{storage: cm}
+	return &concurrentMap{Map: cm}
 }
