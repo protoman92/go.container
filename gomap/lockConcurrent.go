@@ -3,7 +3,7 @@ package gomap
 import "sync"
 
 type lockConcurrentMap struct {
-	mutex   sync.RWMutex
+	mutex   *sync.RWMutex
 	storage Map
 }
 
@@ -57,6 +57,6 @@ func (lcm *lockConcurrentMap) UnderlyingStorage() map[Key]Value {
 
 // NewLockConcurrentMap returns a new lock-based ConcurrentMap.
 func NewLockConcurrentMap(storage Map) ConcurrentMap {
-	cm := &lockConcurrentMap{storage: storage}
+	cm := &lockConcurrentMap{mutex: &sync.RWMutex{}, storage: storage}
 	return newConcurrentMap(cm)
 }

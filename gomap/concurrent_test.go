@@ -2,9 +2,8 @@ package gomap
 
 import (
 	"fmt"
-	"strconv"
-	"sync"
 	"testing"
+	"time"
 )
 
 func testConcurrentMapBasicOps(tb testing.TB, cm ConcurrentMap) {
@@ -63,127 +62,14 @@ func TestLockConcurrentMapBasicOps(t *testing.T) {
 }
 
 func testConcurrentMapConcurrentOps(tb testing.TB, cm ConcurrentMap) {
-	/// Setup
-	keys := make([]string, 200)
-
-	for ix := range keys {
-		keys[ix] = strconv.Itoa(ix)
+	params := &ConcurrentMapOpsParams{
+		concurrentMap:     cm,
+		log:               false,
+		keyCount:          500,
+		setupWaitDuration: time.Second,
 	}
 
-	waitGroup := &sync.WaitGroup{}
-	mutex := sync.RWMutex{}
-
-	accessWaitGroup := func() *sync.WaitGroup {
-		mutex.Lock()
-		defer mutex.Unlock()
-		return waitGroup
-	}
-
-	/// When
-	// Modify
-	go func() {
-		for _, key := range keys {
-			accessWaitGroup().Add(1)
-
-			go func(key string) {
-				cm.GetAsync(key, func(value Value, found bool) {
-					accessWaitGroup().Done()
-				})
-			}(key)
-		}
-	}()
-
-	go func() {
-		for _, key := range keys {
-			accessWaitGroup().Add(1)
-
-			go func(key string) {
-				cm.DeleteAsync(key, func(len int) {
-					accessWaitGroup().Done()
-				})
-			}(key)
-		}
-	}()
-
-	go func() {
-		for i := 0; i < len(keys); i++ {
-			accessWaitGroup().Add(1)
-
-			go func() {
-				cm.ClearAsync(func() {
-					accessWaitGroup().Done()
-				})
-			}()
-		}
-	}()
-
-	// Get
-	go func() {
-		for _, key := range keys {
-			accessWaitGroup().Add(1)
-
-			go func(key string) {
-				cm.SetAsync(key, key, func(len int) {
-					accessWaitGroup().Done()
-				})
-			}(key)
-		}
-	}()
-
-	go func() {
-		for _, key := range keys {
-			accessWaitGroup().Add(1)
-
-			go func(key string) {
-				cm.ContainsAsync(key, func(found bool) {
-					accessWaitGroup().Done()
-				})
-			}(key)
-		}
-	}()
-
-	go func() {
-		for i := 0; i < len(keys); i++ {
-			accessWaitGroup().Add(1)
-
-			go func() {
-				cm.LengthAsync(func(len int) {
-					accessWaitGroup().Done()
-				})
-			}()
-		}
-	}()
-
-	go func() {
-		for i := 0; i < len(keys); i++ {
-			accessWaitGroup().Add(1)
-
-			go func() {
-				cm.IsEmptyAsync(func(empty bool) {
-					accessWaitGroup().Done()
-				})
-			}()
-		}
-	}()
-
-	// Access
-	go func() {
-		for i := 0; i < len(keys); i++ {
-			accessWaitGroup().Add(1)
-
-			go func() {
-				cm.UnderlyingStorageAsync(func(storage map[Key]Value) {
-					accessWaitGroup().Done()
-				})
-			}()
-		}
-	}()
-
-	accessWaitGroup().Wait()
-
-	/// Then
-	// It does not matter what we assert here - running the tests with race mode
-	// will automatically fail if concurrent ops are not performed correctly.
+	SetupConcurrentMapOps(params)
 }
 
 func benchmarkConcurrentMapConcurrentOps(b *testing.B, cmFn func() ConcurrentMap) {
