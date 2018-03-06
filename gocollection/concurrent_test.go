@@ -1,21 +1,20 @@
-package golist
+package gocollection
 
 import (
 	"fmt"
 	"strconv"
 	"sync"
-	"testing"
 )
 
-type ConcurrentListOpsParams struct {
-	concurrentList ConcurrentList
-	log            bool
-	keyCount       int
+type ConcurrentCollectionOpsParams struct {
+	concurrentCollection ConcurrentCollection
+	log                  bool
+	keyCount             int
 }
 
-func setupConcurrentListOps(params *ConcurrentListOpsParams) {
+func setupConcurrentCollectionOps(params *ConcurrentCollectionOpsParams) {
 	/// Setup
-	cl := params.concurrentList
+	cl := params.concurrentCollection
 	keys := make([]string, params.keyCount)
 
 	for ix := range keys {
@@ -76,20 +75,6 @@ func setupConcurrentListOps(params *ConcurrentListOpsParams) {
 	}
 
 	// Get
-	for ix := range keys {
-		accessWaitGroup().Add(1)
-
-		go func(ix int) {
-			cl.GetAsync(ix, func(e Element, found bool) {
-				if params.log {
-					fmt.Printf("Got %v for index %d, found: %t\n", e, ix, found)
-				}
-
-				accessWaitGroup().Done()
-			})
-		}(ix)
-	}
-
 	for _, key := range keys {
 		accessWaitGroup().Add(1)
 
@@ -119,34 +104,4 @@ func setupConcurrentListOps(params *ConcurrentListOpsParams) {
 	}
 
 	accessWaitGroup().Wait()
-}
-
-func testConcurrentListConcurrentOps(tb testing.TB, cl ConcurrentList) {
-	params := &ConcurrentListOpsParams{
-		concurrentList: cl,
-		log:            false,
-		keyCount:       500,
-	}
-
-	setupConcurrentListOps(params)
-}
-
-func benchmarkConcurrentListConcurrentOps(b *testing.B, clFn func() ConcurrentList) {
-	for i := 0; i < b.N; i++ {
-		testConcurrentListConcurrentOps(b, clFn())
-	}
-}
-
-func BenchmarkLockConcurrentListConcurrentOps(b *testing.B) {
-	benchmarkConcurrentListConcurrentOps(b, func() ConcurrentList {
-		sl := NewSliceList()
-		return NewLockConcurrentList(sl)
-	})
-}
-
-func TestLockConcurrentListConcurrentOps(t *testing.T) {
-	t.Parallel()
-	sl := NewSliceList()
-	cl := NewLockConcurrentList(sl)
-	testConcurrentListConcurrentOps(t, cl)
 }

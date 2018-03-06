@@ -1,7 +1,15 @@
-package golist
+package gocollection
+
+import (
+	"fmt"
+)
 
 type sliceList struct {
 	slice []Element
+}
+
+func (sl *sliceList) String() string {
+	return fmt.Sprint(sl.slice)
 }
 
 func (sl *sliceList) Add(element Element) int {
@@ -44,9 +52,12 @@ func (sl *sliceList) Length() int {
 }
 
 func (sl *sliceList) Remove(element Element) bool {
-	for ix, e := range sl.slice {
+	for ix := range sl.slice {
+		e := sl.slice[ix]
+
 		if e == element {
-			slice1 := sl.slice[:ix]
+			slice1 := make([]Element, ix)
+			copy(slice1, sl.slice[:ix])
 
 			for jx := ix + 1; jx < len(sl.slice); jx++ {
 				slice1 = append(slice1, sl.slice[jx])
