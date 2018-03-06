@@ -11,4 +11,11 @@ To use this package, run:
 > go get github.com/protoman92/gocollection
 
 This package contains the following:
-- **gomap**: Key-value map implementation: **BasicMap**, **ConcurrentMap** (thread-safe map).
+
+## gomap: Key-value map implementation
+
+Here we have **BasicMap** (light wrapper of a **map**), **ConcurrentMap** (thread-safe). There are 2 implementations of **ConcurrentMap**:
+
+- **ChannelConcurrentMap**: Channel-based **ConcurrentMap** with each request type having its own channel and all coordination is done in a for loop within a goroutine. (50s running benchmark: 2146428 ns/op)
+
+- **LockConcurrentMap**: Simple mutex-dependent **ConcurrentMap**. This version should be faster than **ChannelConcurrentMap**. (50s running benchmark: 1498370 ns/op)

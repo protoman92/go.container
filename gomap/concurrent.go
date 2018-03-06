@@ -6,11 +6,11 @@ type ConcurrentMap interface {
 	UnderlyingStorageAsync(callback func(map[Key]Value))
 	ClearAsync(callback func())
 	ContainsAsync(key Key, callback func(bool))
-	DeleteAsync(key Key, callback func(int))
+	DeleteAsync(key Key, callback func(bool))
 	GetAsync(key Key, callback func(Value, bool))
 	IsEmptyAsync(callback func(bool))
 	LengthAsync(callback func(int))
-	SetAsync(key Key, value Value, callback func(int))
+	SetAsync(key Key, value Value, callback func(Value, bool))
 }
 
 // This is a thin wrapper over a thread-safe Map in order to provide additional
@@ -31,7 +31,7 @@ func (cm *concurrentMap) Clear() {
 	cm.storage.Clear()
 }
 
-func (cm *concurrentMap) Delete(key Key) int {
+func (cm *concurrentMap) Delete(key Key) bool {
 	return cm.storage.Delete(key)
 }
 
@@ -43,7 +43,7 @@ func (cm *concurrentMap) Length() int {
 	return cm.storage.Length()
 }
 
-func (cm *concurrentMap) Set(key Key, value Value) int {
+func (cm *concurrentMap) Set(key Key, value Value) (Value, bool) {
 	return cm.storage.Set(key, value)
 }
 
@@ -68,7 +68,7 @@ func (cm *concurrentMap) ClearAsync(callback func()) {
 	}()
 }
 
-func (cm *concurrentMap) DeleteAsync(key Key, callback func(int)) {
+func (cm *concurrentMap) DeleteAsync(key Key, callback func(bool)) {
 	go func() {
 		result := cm.Delete(key)
 		callback(result)
@@ -100,10 +100,10 @@ func (cm *concurrentMap) LengthAsync(callback func(int)) {
 	}()
 }
 
-func (cm *concurrentMap) SetAsync(key Key, value Value, callback func(int)) {
+func (cm *concurrentMap) SetAsync(key Key, value Value, callback func(Value, bool)) {
 	go func() {
-		length := cm.Set(key, value)
-		callback(length)
+		prev, found := cm.Set(key, value)
+		callback(prev, found)
 	}()
 }
 

@@ -18,23 +18,23 @@ func testConcurrentMapBasicOps(tb testing.TB, cm ConcurrentMap) {
 		tb.Errorf("Should contain %v", key)
 	}
 
-	value1, found := cm.Get(key)
+	getValue1, getFound1 := cm.Get(key)
 
-	if value1 != value || !found {
+	if getValue1 != value || !getFound1 {
 		tb.Errorf("Should contain %v with value %v", key, value)
 	}
 
-	cm.Delete(key)
-	_, found1 := cm.Get(key)
+	deletedFound := cm.Delete(key)
+	getValue2, getFound2 := cm.Get(key)
 
-	if found1 && cm.Contains(key) {
+	if (getFound2 && cm.Contains(key)) || getValue2 != nil || !deletedFound {
 		tb.Errorf("Should not contain %v", key)
 	}
 
-	cm.Set(key, value)
+	setPrev, setFound := cm.Set(key, value)
 	length := cm.Length()
 
-	if length != 1 {
+	if length != 1 || setPrev != nil || setFound {
 		tb.Errorf("Should have length 1, but got %d", length)
 	}
 

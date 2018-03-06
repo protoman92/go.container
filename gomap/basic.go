@@ -52,9 +52,11 @@ func (b *basicMap) Contains(key Key) bool {
 	return found
 }
 
-func (b *basicMap) Delete(key Key) int {
-	delete(b.storage, b.convertKey(key))
-	return len(b.storage)
+func (b *basicMap) Delete(key Key) bool {
+	strKey := b.convertKey(key)
+	prev := b.storage[strKey]
+	delete(b.storage, strKey)
+	return prev != nil
 }
 
 func (b *basicMap) Get(key Key) (Value, bool) {
@@ -70,9 +72,11 @@ func (b *basicMap) Length() int {
 	return len(b.storage)
 }
 
-func (b *basicMap) Set(key Key, value Value) int {
+func (b *basicMap) Set(key Key, value Value) (Value, bool) {
+	strKey := b.convertKey(key)
+	prev := b.storage[strKey]
 	b.storage[b.convertKey(key)] = value
-	return len(b.storage)
+	return prev, prev != nil
 }
 
 // NewBasicMap creates a new BasicMap.

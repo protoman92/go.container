@@ -7,7 +7,7 @@ type containsRequest struct {
 
 type deleteRequest struct {
 	key   Key
-	lenCh chan<- int
+	lenCh chan<- bool
 }
 
 type getResult struct {
@@ -20,10 +20,15 @@ type getRequest struct {
 	valueCh chan<- *getResult
 }
 
+type setResult struct {
+	element Value
+	found   bool
+}
+
 type setRequest struct {
 	key   Key
 	value Value
-	lenCh chan<- int
+	lenCh chan<- *setResult
 }
 
 type channelConcurrentMap struct {
@@ -60,8 +65,8 @@ func (ccm *channelConcurrentMap) Contains(key Key) bool {
 }
 
 // This operation blocks until some value is received.
-func (ccm *channelConcurrentMap) Delete(key Key) int {
-	lenCh := make(chan int, 0)
+func (ccm *channelConcurrentMap) Delete(key Key) bool {
+	lenCh := make(chan bool, 0)
 	ccm.deleteCh <- &deleteRequest{key: key, lenCh: lenCh}
 	return <-lenCh
 }
@@ -87,10 +92,11 @@ func (ccm *channelConcurrentMap) Length() int {
 }
 
 // This operaton blocks until some value is received.
-func (ccm *channelConcurrentMap) Set(key Key, value Value) int {
-	lenCh := make(chan int, 0)
+func (ccm *channelConcurrentMap) Set(key Key, value Value) (Value, bool) {
+	lenCh := make(chan *setResult, 0)
 	ccm.setCh <- &setRequest{key: key, value: value, lenCh: lenCh}
-	return <-lenCh
+	result := <-lenCh
+	return result.element, result.found
 }
 
 // This operation blocks until the underlying Map is received.
@@ -100,34 +106,35 @@ func (ccm *channelConcurrentMap) UnderlyingMap() Map {
 	return <-accessCh
 }
 
-func (cm *channelConcurrentMap) loopMap() {
+func (ccm *channelConcurrentMap) loopMap() {
 	for {
 		select {
-		case ar := <-cm.accessMapCh:
-			ar <- cm.storage
+		case ar := <-ccm.accessMapCh:
+			ar <- ccm.storage
 
-		case ar := <-cm.accessStorageCh:
-			ar <- cm.storage.UnderlyingStorage()
+		case ar := <-ccm.accessStorageCh:
+			ar <- ccm.storage.UnderlyingStorage()
 
-		case cr := <-cm.clearCh:
-			cm.storage.Clear()
+		case cr := <-ccm.clearCh:
+			ccm.storage.Clear()
 			cr <- true
 
-		case cr := <-cm.containsCh:
-			cr.foundCh <- cm.storage.Contains(cr.key)
+		case cr := <-ccm.containsCh:
+			cr.foundCh <- ccm.storage.Contains(cr.key)
 
-		case dr := <-cm.deleteCh:
-			dr.lenCh <- cm.storage.Delete(dr.key)
+		case dr := <-ccm.deleteCh:
+			dr.lenCh <- ccm.storage.Delete(dr.key)
 
-		case lr := <-cm.lenCh:
-			lr <- cm.storage.Length()
+		case lr := <-ccm.lenCh:
+			lr <- ccm.storage.Length()
 
-		case gr := <-cm.getCh:
-			element, found := cm.storage.Get(gr.key)
+		case gr := <-ccm.getCh:
+			element, found := ccm.storage.Get(gr.key)
 			gr.valueCh <- &getResult{element: element, found: found}
 
-		case sr := <-cm.setCh:
-			sr.lenCh <- cm.storage.Set(sr.key, sr.value)
+		case sr := <-ccm.setCh:
+			element, found := ccm.storage.Set(sr.key, sr.value)
+			sr.lenCh <- &setResult{element: element, found: found}
 		}
 	}
 }

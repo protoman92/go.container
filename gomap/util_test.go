@@ -39,9 +39,9 @@ func SetupConcurrentMapOps(params *ConcurrentMapOpsParams) {
 			accessWaitGroup().Add(1)
 
 			go func(key string) {
-				cm.SetAsync(key, key, func(len int) {
+				cm.SetAsync(key, key, func(prev Value, found bool) {
 					if params.log {
-						fmt.Printf("Set key %v-value %v. New length %d\n", key, key, len)
+						fmt.Printf("Set key %v-value %v. Prev value: %v\n", key, key, prev)
 					}
 
 					accessWaitGroup().Done()
@@ -55,9 +55,9 @@ func SetupConcurrentMapOps(params *ConcurrentMapOpsParams) {
 			accessWaitGroup().Add(1)
 
 			go func(key string) {
-				cm.DeleteAsync(key, func(len int) {
+				cm.DeleteAsync(key, func(found bool) {
 					if params.log {
-						fmt.Printf("Deleted key %v, new length: %d\n", key, len)
+						fmt.Printf("Deleted key %v, found: %t\n", key, found)
 					}
 
 					accessWaitGroup().Done()

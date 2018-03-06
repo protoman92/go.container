@@ -11,13 +11,11 @@ type Map interface {
 	UnderlyingStorage() map[Key]Value
 	Clear()
 	Contains(key Key) bool
+	Delete(key Key) bool
 	Get(key Key) (Value, bool)
 	IsEmpty() bool
 	Length() int
 
-	// Delete a key and return the new length.
-	Delete(key Key) int
-
-	// Set a key with a value, and return the new length.
-	Set(key Key, value Value) int
+	// Set a key with a value, and return the previous value.
+	Set(key Key, value Value) (Value, bool)
 }
