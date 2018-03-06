@@ -7,9 +7,8 @@ import (
 	"testing"
 )
 
-func testExecuteBasicsOpsOnConcMap(t *testing.T, cm ConcurrentMap) {
+func testConcurrentMapBasicOps(tb testing.TB, cm ConcurrentMap) {
 	/// Setup
-	t.Parallel()
 	key := "Key"
 	value := "Value"
 
@@ -17,48 +16,55 @@ func testExecuteBasicsOpsOnConcMap(t *testing.T, cm ConcurrentMap) {
 	cm.Set(key, value)
 
 	if !cm.Contains(key) {
-		t.Errorf("Should contain %v", key)
+		tb.Errorf("Should contain %v", key)
 	}
 
 	value1, found := cm.Get(key)
 
 	if value1 != value || !found {
-		t.Errorf("Should contain %v with value %v", key, value)
+		tb.Errorf("Should contain %v with value %v", key, value)
 	}
 
 	cm.Delete(key)
 	_, found1 := cm.Get(key)
 
 	if found1 && cm.Contains(key) {
-		t.Errorf("Should not contain %v", key)
+		tb.Errorf("Should not contain %v", key)
 	}
 
 	cm.Set(key, value)
 	length := cm.Length()
 
 	if length != 1 {
-		t.Errorf("Should have length 1, but got %d", length)
+		tb.Errorf("Should have length 1, but got %d", length)
 	}
 
 	cm.Clear()
 
 	if !cm.IsEmpty() {
-		t.Errorf("Should be empty")
+		tb.Errorf("Should be empty")
 	}
 
 	fmt.Printf("Final storage: %v\n", cm.UnderlyingStorage())
 }
 
-func TestExecutingBasicOpsOnChannelConcurrentMap(t *testing.T) {
+func TestChannelConcurrentMapBasicOps(t *testing.T) {
+	t.Parallel()
 	bm := NewDefaultBasicMap()
 	cm := NewChannelConcurrentMap(bm)
-	testExecuteBasicsOpsOnConcMap(t, cm)
+	testConcurrentMapBasicOps(t, cm)
 }
 
-func testExecutingConcurrentOpsOnConcurrentMap(t *testing.T, cm ConcurrentMap) {
-	/// Setup
+func TestLockConcurrentMapBasicOps(t *testing.T) {
 	t.Parallel()
-	keys := make([]string, 1000)
+	bm := NewDefaultBasicMap()
+	cm := NewLockConcurrentMap(bm)
+	testConcurrentMapBasicOps(t, cm)
+}
+
+func testConcurrentMapConcurrentOps(tb testing.TB, cm ConcurrentMap) {
+	/// Setup
+	keys := make([]string, 200)
 
 	for ix := range keys {
 		keys[ix] = strconv.Itoa(ix)
@@ -176,15 +182,40 @@ func testExecutingConcurrentOpsOnConcurrentMap(t *testing.T, cm ConcurrentMap) {
 	accessWaitGroup().Wait()
 
 	/// Then
-	// It does not matter what the values here are - running the tests with race
-	// mode will automatically fail if concurrent operations are not performed
-	// correctly.
-	fmt.Printf("Final length: %d\n", cm.Length())
-	fmt.Printf("Final storage: %v\n", cm.UnderlyingStorage())
+	// It does not matter what we assert here - running the tests with race mode
+	// will automatically fail if concurrent ops are not performed correctly.
 }
 
-func TestExecutingConcurrentOpsOnChannelConcurrentMap(t *testing.T) {
+func benchmarkConcurrentMapConcurrentOps(b *testing.B, cmFn func() ConcurrentMap) {
+	for i := 0; i < b.N; i++ {
+		testConcurrentMapConcurrentOps(b, cmFn())
+	}
+}
+
+func BenchmarkChannelConcurrentMapConcurrentOps(b *testing.B) {
+	benchmarkConcurrentMapConcurrentOps(b, func() ConcurrentMap {
+		bm := NewDefaultBasicMap()
+		return NewChannelConcurrentMap(bm)
+	})
+}
+
+func BenchmarkLockConcurrentMapConcurrentOps(b *testing.B) {
+	benchmarkConcurrentMapConcurrentOps(b, func() ConcurrentMap {
+		bm := NewDefaultBasicMap()
+		return NewLockConcurrentMap(bm)
+	})
+}
+
+func TestChannelConcurrentMapConcurrentOps(t *testing.T) {
+	t.Parallel()
 	bm := NewDefaultBasicMap()
 	cm := NewChannelConcurrentMap(bm)
-	testExecutingConcurrentOpsOnConcurrentMap(t, cm)
+	testConcurrentMapConcurrentOps(t, cm)
+}
+
+func TestLockConcurrentMapConcurrentOps(t *testing.T) {
+	t.Parallel()
+	bm := NewDefaultBasicMap()
+	cm := NewLockConcurrentMap(bm)
+	testConcurrentMapConcurrentOps(t, cm)
 }

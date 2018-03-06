@@ -38,66 +38,66 @@ type channelConcurrentMap struct {
 	setCh           chan *setRequest
 }
 
-// This operation blocks until the underlying Map is received.
-func (cm *channelConcurrentMap) UnderlyingMap() Map {
-	accessCh := make(chan Map, 0)
-	cm.accessMapCh <- accessCh
-	return <-accessCh
-}
-
 // This operation blocks until the underlying storage is received.
-func (cm *channelConcurrentMap) UnderlyingStorage() map[Key]Value {
+func (ccm *channelConcurrentMap) UnderlyingStorage() map[Key]Value {
 	accessCh := make(chan map[Key]Value, 0)
-	cm.accessStorageCh <- accessCh
+	ccm.accessStorageCh <- accessCh
 	return <-accessCh
 }
 
 // This operation blocks until some result is received.
-func (cm *channelConcurrentMap) Clear() {
+func (ccm *channelConcurrentMap) Clear() {
 	requestCh := make(chan interface{}, 0)
-	cm.clearCh <- requestCh
+	ccm.clearCh <- requestCh
 	<-requestCh
 }
 
 // This operation blocks until a value is received.
-func (cm *channelConcurrentMap) Contains(key Key) bool {
+func (ccm *channelConcurrentMap) Contains(key Key) bool {
 	foundCh := make(chan bool, 0)
-	cm.containsCh <- &containsRequest{key: key, foundCh: foundCh}
+	ccm.containsCh <- &containsRequest{key: key, foundCh: foundCh}
 	return <-foundCh
 }
 
 // This operation blocks until some value is received.
-func (cm *channelConcurrentMap) Delete(key Key) int {
+func (ccm *channelConcurrentMap) Delete(key Key) int {
 	lenCh := make(chan int, 0)
-	cm.deleteCh <- &deleteRequest{key: key, lenCh: lenCh}
+	ccm.deleteCh <- &deleteRequest{key: key, lenCh: lenCh}
 	return <-lenCh
 }
 
 // This operaton blocks until some value is received.
-func (cm *channelConcurrentMap) Get(key Key) (Value, bool) {
+func (ccm *channelConcurrentMap) Get(key Key) (Value, bool) {
 	valueCh := make(chan *getResult, 0)
-	cm.getCh <- &getRequest{key: key, valueCh: valueCh}
+	ccm.getCh <- &getRequest{key: key, valueCh: valueCh}
 	result := <-valueCh
 	return result.element, result.found
 }
 
 // This operaton blocks until some value is received.
-func (cm *channelConcurrentMap) IsEmpty() bool {
-	return cm.Length() == 0
+func (ccm *channelConcurrentMap) IsEmpty() bool {
+	return ccm.Length() == 0
 }
 
 // This operaton blocks until some value is received.
-func (cm *channelConcurrentMap) Length() int {
+func (ccm *channelConcurrentMap) Length() int {
 	requestCh := make(chan int, 0)
-	cm.lenCh <- requestCh
+	ccm.lenCh <- requestCh
 	return <-requestCh
 }
 
 // This operaton blocks until some value is received.
-func (cm *channelConcurrentMap) Set(key Key, value Value) int {
+func (ccm *channelConcurrentMap) Set(key Key, value Value) int {
 	lenCh := make(chan int, 0)
-	cm.setCh <- &setRequest{key: key, value: value, lenCh: lenCh}
+	ccm.setCh <- &setRequest{key: key, value: value, lenCh: lenCh}
 	return <-lenCh
+}
+
+// This operation blocks until the underlying Map is received.
+func (ccm *channelConcurrentMap) UnderlyingMap() Map {
+	accessCh := make(chan Map, 0)
+	ccm.accessMapCh <- accessCh
+	return <-accessCh
 }
 
 func (cm *channelConcurrentMap) loopMap() {
