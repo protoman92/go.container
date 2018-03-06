@@ -19,7 +19,7 @@ func (bl *basicList) Clear() {
 }
 
 func (bl *basicList) Get(index int) (Element, bool) {
-	if index > 0 && index < len(bl.slice) {
+	if index >= 0 && index < len(bl.slice) {
 		return bl.slice[index], true
 	}
 
@@ -31,11 +31,9 @@ func (bl *basicList) Length() int {
 }
 
 func (bl *basicList) Remove(element Element) bool {
-	var slice1 []Element
-
 	for ix, e := range bl.slice {
 		if e == element {
-			slice1 = bl.slice[:ix]
+			slice1 := bl.slice[:ix]
 
 			for jx := ix + 1; jx < len(bl.slice); jx++ {
 				slice1 = append(slice1, bl.slice[jx])
