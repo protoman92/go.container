@@ -104,3 +104,22 @@ func TestLockConcurrentSliceListAllOps(t *testing.T) {
 		return NewLockConcurrentList(sl)
 	})
 }
+
+func TestSliceListWithExistingList(t *testing.T) {
+	/// Setup
+	array1 := [4]interface{}{1, 2, 3, 4}
+	slice1 := array1[:]
+	list := NewSliceList(slice1)
+
+	/// When
+	array1[3] = 5
+
+	/// Then
+	if element := slice1[3]; element != 5 {
+		t.Errorf("Should have changed element")
+	}
+
+	if contains := list.Contains(5); contains {
+		t.Errorf("Should not retain array reference")
+	}
+}
