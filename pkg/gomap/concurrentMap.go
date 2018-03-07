@@ -8,11 +8,11 @@ import (
 type ConcurrentMap interface {
 	Map
 	ClearAsync(callback func())
-	ContainsAsync(key Key, callback func(bool))
-	DeleteAsync(key Key, callback func(bool))
-	GetAsync(key Key, callback func(Value, bool))
+	ContainsAsync(key interface{}, callback func(bool))
+	DeleteAsync(key interface{}, callback func(bool))
+	GetAsync(key interface{}, callback func(interface{}, bool))
 	LengthAsync(callback func(int))
-	SetAsync(key Key, value Value, callback func(Value, bool))
+	SetAsync(key interface{}, value interface{}, callback func(interface{}, bool))
 }
 
 // This is a thin wrapper over a thread-safe Map in order to provide additional
@@ -25,7 +25,7 @@ func (cm *concurrentMap) String() string {
 	return fmt.Sprint(cm.Map)
 }
 
-func (cm *concurrentMap) ContainsAsync(key Key, callback func(bool)) {
+func (cm *concurrentMap) ContainsAsync(key interface{}, callback func(bool)) {
 	go func() {
 		found := cm.Contains(key)
 		callback(found)
@@ -39,14 +39,14 @@ func (cm *concurrentMap) ClearAsync(callback func()) {
 	}()
 }
 
-func (cm *concurrentMap) DeleteAsync(key Key, callback func(bool)) {
+func (cm *concurrentMap) DeleteAsync(key interface{}, callback func(bool)) {
 	go func() {
 		result := cm.Delete(key)
 		callback(result)
 	}()
 }
 
-func (cm *concurrentMap) GetAsync(key Key, callback func(Value, bool)) {
+func (cm *concurrentMap) GetAsync(key interface{}, callback func(interface{}, bool)) {
 	go func() {
 		v, found := cm.Get(key)
 		callback(v, found)
@@ -60,7 +60,7 @@ func (cm *concurrentMap) LengthAsync(callback func(int)) {
 	}()
 }
 
-func (cm *concurrentMap) SetAsync(key Key, value Value, callback func(Value, bool)) {
+func (cm *concurrentMap) SetAsync(key interface{}, value interface{}, callback func(interface{}, bool)) {
 	go func() {
 		prev, found := cm.Set(key, value)
 		callback(prev, found)

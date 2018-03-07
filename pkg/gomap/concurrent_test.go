@@ -42,7 +42,7 @@ func setupConcurrentMapOps(params *ConcurrentMapOpsParams) {
 		go func(key string) {
 			time.Sleep(params.opSleepDuration())
 
-			cm.SetAsync(key, key, func(prev Value, found bool) {
+			cm.SetAsync(key, key, func(prev interface{}, found bool) {
 				if params.log {
 					fmt.Printf("Set key %v-value %v. Prev value: %v\n", key, key, prev)
 				}
@@ -91,7 +91,7 @@ func setupConcurrentMapOps(params *ConcurrentMapOpsParams) {
 		go func(key string) {
 			time.Sleep(params.opSleepDuration())
 
-			cm.GetAsync(key, func(value Value, found bool) {
+			cm.GetAsync(key, func(value interface{}, found bool) {
 				if params.log {
 					fmt.Printf("Got %v for key %v, found: %t\n", value, key, found)
 				}

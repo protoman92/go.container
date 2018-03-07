@@ -10,7 +10,7 @@ import (
 
 func testListConcurrentOps(tb testing.TB, cl ConcurrentList) {
 	keyCount := 1000
-	keys := make([]string, keyCount)
+	keys := make([]interface{}, keyCount)
 
 	for ix := range keys {
 		keys[ix] = strconv.Itoa(ix)
@@ -38,7 +38,7 @@ func testListConcurrentOps(tb testing.TB, cl ConcurrentList) {
 		go func(ix int) {
 			time.Sleep(sleepRandomizer())
 
-			cl.GetAtAsync(ix, func(e Element, found bool) {
+			cl.GetAtAsync(ix, func(e interface{}, found bool) {
 				if params.log {
 					fmt.Printf("Got element %v, found: %t\n", e, found)
 				}
@@ -55,7 +55,7 @@ func testListConcurrentOps(tb testing.TB, cl ConcurrentList) {
 		go func(ix int) {
 			time.Sleep(sleepRandomizer())
 
-			cl.RemoveAtAsync(ix, func(e Element, found bool) {
+			cl.RemoveAtAsync(ix, func(e interface{}, found bool) {
 				if params.log {
 					fmt.Printf("Deleted element %v, found: %t\n", e, found)
 				}
@@ -93,7 +93,7 @@ func testListConcurrentOps(tb testing.TB, cl ConcurrentList) {
 		go func(ix int) {
 			time.Sleep(sleepRandomizer())
 
-			cl.SetAtAsync(ix, keys[ix], func(e Element, found bool) {
+			cl.SetAtAsync(ix, keys[ix], func(e interface{}, found bool) {
 				if params.log {
 					fmt.Printf("Prev element %v, found: %t\n", e, found)
 				}
@@ -104,6 +104,7 @@ func testListConcurrentOps(tb testing.TB, cl ConcurrentList) {
 	}
 
 	wgAccess().Wait()
+	fmt.Printf("Final storage state: %v", cl)
 }
 
 func benchmarkListConcurrentOps(b *testing.B, clFn func() ConcurrentList) {
@@ -114,13 +115,13 @@ func benchmarkListConcurrentOps(b *testing.B, clFn func() ConcurrentList) {
 
 func BenchmarkLockSliceListConcurrentOps(b *testing.B) {
 	benchmarkListConcurrentOps(b, func() ConcurrentList {
-		sl := NewSliceList()
+		sl := NewDefaultSliceList()
 		return NewLockConcurrentList(sl)
 	})
 }
 
 func TestLockSliceListConcurrentOps(t *testing.T) {
-	sl := NewSliceList()
+	sl := NewDefaultSliceList()
 	cl := NewLockConcurrentList(sl)
 	testListConcurrentOps(t, cl)
 }

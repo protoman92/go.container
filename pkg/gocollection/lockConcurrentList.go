@@ -19,14 +19,14 @@ func (lcl *lockConcurrentList) String() string {
 	return fmt.Sprint(lcl.list)
 }
 
-func (lcl *lockConcurrentList) GetAt(index int) (Element, bool) {
+func (lcl *lockConcurrentList) GetAt(index int) (interface{}, bool) {
 	lcl.mutex.RLock()
 	defer lcl.mutex.RUnlock()
 	e, found := lcl.list.GetAt(index)
 	return e, found
 }
 
-func (lcl *lockConcurrentList) RemoveAt(index int) (Element, bool) {
+func (lcl *lockConcurrentList) RemoveAt(index int) (interface{}, bool) {
 	lcl.mutex.Lock()
 	defer lcl.mutex.Unlock()
 	e, found := lcl.list.RemoveAt(index)
@@ -39,7 +39,7 @@ func (lcl *lockConcurrentList) RemoveAllAt(indexes ...int) int {
 	return lcl.list.RemoveAllAt(indexes...)
 }
 
-func (lcl *lockConcurrentList) SetAt(index int, element Element) (Element, bool) {
+func (lcl *lockConcurrentList) SetAt(index int, element interface{}) (interface{}, bool) {
 	lcl.mutex.Lock()
 	defer lcl.mutex.Unlock()
 	return lcl.list.SetAt(index, element)

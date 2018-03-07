@@ -22,19 +22,19 @@ func (lcm *lockConcurrentMap) Clear() {
 	lcm.storage.Clear()
 }
 
-func (lcm *lockConcurrentMap) Contains(key Key) bool {
+func (lcm *lockConcurrentMap) Contains(key interface{}) bool {
 	lcm.mutex.RLock()
 	defer lcm.mutex.RUnlock()
 	return lcm.storage.Contains(key)
 }
 
-func (lcm *lockConcurrentMap) Delete(key Key) bool {
+func (lcm *lockConcurrentMap) Delete(key interface{}) bool {
 	lcm.mutex.Lock()
 	defer lcm.mutex.Unlock()
 	return lcm.storage.Delete(key)
 }
 
-func (lcm *lockConcurrentMap) Get(key Key) (Value, bool) {
+func (lcm *lockConcurrentMap) Get(key interface{}) (interface{}, bool) {
 	lcm.mutex.RLock()
 	defer lcm.mutex.RUnlock()
 	return lcm.storage.Get(key)
@@ -46,7 +46,13 @@ func (lcm *lockConcurrentMap) Length() int {
 	return lcm.storage.Length()
 }
 
-func (lcm *lockConcurrentMap) Set(key Key, value Value) (Value, bool) {
+func (lcm *lockConcurrentMap) Keys() []interface{} {
+	lcm.mutex.RLock()
+	defer lcm.mutex.RUnlock()
+	return lcm.storage.Keys()
+}
+
+func (lcm *lockConcurrentMap) Set(key interface{}, value interface{}) (interface{}, bool) {
 	lcm.mutex.Lock()
 	defer lcm.mutex.Unlock()
 	return lcm.storage.Set(key, value)

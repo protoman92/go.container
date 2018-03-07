@@ -10,7 +10,7 @@ import (
 type ConcurrentOpsParams struct {
 	concurrentCollection ConcurrentCollection
 	log                  bool
-	keys                 []string
+	keys                 []interface{}
 	opSleepDuration      func() time.Duration
 }
 
@@ -37,7 +37,7 @@ func setupConcurrentCollectionOps(params *ConcurrentOpsParams) func() *sync.Wait
 	for _, key := range keys {
 		accessWaitGroup().Add(1)
 
-		go func(key string) {
+		go func(key interface{}) {
 			time.Sleep(params.opSleepDuration())
 
 			cl.AddAsync(key, func(added int) {
@@ -50,10 +50,26 @@ func setupConcurrentCollectionOps(params *ConcurrentOpsParams) func() *sync.Wait
 		}(key)
 	}
 
+	for i := 0; i < len(keys); i++ {
+		accessWaitGroup().Add(1)
+
+		go func() {
+			time.Sleep(params.opSleepDuration())
+
+			cl.AddAllAsync(func(added int) {
+				if params.log {
+					fmt.Printf("Added %d elements\n", added)
+				}
+
+				accessWaitGroup().Done()
+			}, keys...)
+		}()
+	}
+
 	for _, key := range keys {
 		accessWaitGroup().Add(1)
 
-		go func(key string) {
+		go func(key interface{}) {
 			time.Sleep(params.opSleepDuration())
 
 			cl.RemoveAsync(key, func(removed int) {
@@ -86,7 +102,7 @@ func setupConcurrentCollectionOps(params *ConcurrentOpsParams) func() *sync.Wait
 	for _, key := range keys {
 		accessWaitGroup().Add(1)
 
-		go func(key string) {
+		go func(key interface{}) {
 			time.Sleep(params.opSleepDuration())
 
 			cl.ContainsAsync(key, func(found bool) {

@@ -16,6 +16,10 @@ func (rm *removable) String() string {
 
 func testCollectionBasicOps(t *testing.T, c Collection) {
 	/// Setup & When & Then
+	if contains := c.Contains(0); contains {
+		t.Errorf("Should not contain anything")
+	}
+
 	add1 := c.Add(1)
 	add2 := c.Add(2)
 	add3 := c.Add(3)
@@ -23,6 +27,10 @@ func testCollectionBasicOps(t *testing.T, c Collection) {
 
 	if add1 != 1 || add2 != 1 || add3 != 1 || add4 != 1 {
 		t.Errorf("Added wrong element count")
+	}
+
+	if contains := c.Contains(1); !contains {
+		t.Errorf("Should contain element")
 	}
 
 	if c.Length() != 4 {
@@ -37,7 +45,7 @@ func testCollectionBasicOps(t *testing.T, c Collection) {
 		t.Errorf("Should have 3 elements")
 	}
 
-	slice := make([]Element, 1000)
+	slice := make([]interface{}, 1000)
 
 	for ix := range slice {
 		slice[ix] = strconv.Itoa(ix)
@@ -70,8 +78,8 @@ func testCollectionAdd(t *testing.T, c Collection) {
 	addAllCount := 1000
 	added := 0
 
-	addSlice := make([]Element, addCount)
-	addAllSlice := make([]Element, addAllCount)
+	addSlice := make([]interface{}, addCount)
+	addAllSlice := make([]interface{}, addAllCount)
 
 	for ix := range addSlice {
 		addSlice[ix] = ix
@@ -116,7 +124,7 @@ func testCollectionAdd(t *testing.T, c Collection) {
 func testCollectionRemove(t *testing.T, c Collection) {
 	/// Setup
 	addCount := 1000
-	addSlice := make([]Element, addCount)
+	addSlice := make([]interface{}, addCount)
 
 	for ix := range addSlice {
 		addSlice[ix] = &removable{index: ix}

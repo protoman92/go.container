@@ -11,7 +11,7 @@ func testListBasicOps(t *testing.T, list List) {
 		t.Errorf("Should not have any element")
 	}
 
-	newElements := []Element{1, 2, 3, 4}
+	newElements := []interface{}{1, 2, 3, 4}
 
 	if added := list.AddAll(newElements...); added != 4 {
 		t.Errorf("Wrong number of elements added")
@@ -92,7 +92,7 @@ func TestSliceListAllOps(t *testing.T) {
 	t.Parallel()
 
 	testListAllOps(t, func() List {
-		return NewSliceList()
+		return NewDefaultSliceList()
 	})
 }
 
@@ -100,7 +100,7 @@ func TestLockConcurrentSliceListAllOps(t *testing.T) {
 	t.Parallel()
 
 	testListAllOps(t, func() List {
-		sl := NewSliceList()
+		sl := NewDefaultSliceList()
 		return NewLockConcurrentList(sl)
 	})
 }

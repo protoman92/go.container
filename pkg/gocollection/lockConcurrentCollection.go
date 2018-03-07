@@ -1,7 +1,6 @@
 package gocollection
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -10,19 +9,13 @@ type lockConcurrentCollection struct {
 	storage Collection
 }
 
-func (lcc *lockConcurrentCollection) String() string {
-	lcc.mutex.RLock()
-	defer lcc.mutex.RUnlock()
-	return fmt.Sprint(lcc.storage)
-}
-
-func (lcc *lockConcurrentCollection) Add(element Element) int {
+func (lcc *lockConcurrentCollection) Add(element interface{}) int {
 	lcc.mutex.Lock()
 	defer lcc.mutex.Unlock()
 	return lcc.storage.Add(element)
 }
 
-func (lcc *lockConcurrentCollection) AddAll(elements ...Element) int {
+func (lcc *lockConcurrentCollection) AddAll(elements ...interface{}) int {
 	lcc.mutex.Lock()
 	defer lcc.mutex.Unlock()
 	return lcc.storage.AddAll(elements...)
@@ -34,13 +27,13 @@ func (lcc *lockConcurrentCollection) Clear() {
 	lcc.storage.Clear()
 }
 
-func (lcc *lockConcurrentCollection) Contains(element Element) bool {
+func (lcc *lockConcurrentCollection) Contains(element interface{}) bool {
 	lcc.mutex.RLock()
 	defer lcc.mutex.RUnlock()
 	return lcc.storage.Contains(element)
 }
 
-func (lcc *lockConcurrentCollection) ContainsAll(elements ...Element) bool {
+func (lcc *lockConcurrentCollection) ContainsAll(elements ...interface{}) bool {
 	lcc.mutex.RLock()
 	defer lcc.mutex.RUnlock()
 	return lcc.storage.ContainsAll(elements...)
@@ -52,13 +45,13 @@ func (lcc *lockConcurrentCollection) Length() int {
 	return lcc.storage.Length()
 }
 
-func (lcc *lockConcurrentCollection) Remove(element Element) int {
+func (lcc *lockConcurrentCollection) Remove(element interface{}) int {
 	lcc.mutex.Lock()
 	defer lcc.mutex.Unlock()
 	return lcc.storage.Remove(element)
 }
 
-func (lcc *lockConcurrentCollection) RemoveAll(elements ...Element) int {
+func (lcc *lockConcurrentCollection) RemoveAll(elements ...interface{}) int {
 	lcc.mutex.Lock()
 	defer lcc.mutex.Unlock()
 	return lcc.storage.RemoveAll(elements...)

@@ -6,19 +6,19 @@ import (
 )
 
 type sliceList struct {
-	slice []Element
+	slice []interface{}
 }
 
 func (sl *sliceList) String() string {
 	return fmt.Sprint(sl.slice)
 }
 
-func (sl *sliceList) Add(element Element) int {
+func (sl *sliceList) Add(element interface{}) int {
 	sl.slice = append(sl.slice, element)
 	return 1
 }
 
-func (sl *sliceList) AddAll(elements ...Element) int {
+func (sl *sliceList) AddAll(elements ...interface{}) int {
 	for _, element := range elements {
 		sl.slice = append(sl.slice, element)
 	}
@@ -27,10 +27,10 @@ func (sl *sliceList) AddAll(elements ...Element) int {
 }
 
 func (sl *sliceList) Clear() {
-	sl.slice = make([]Element, 0)
+	sl.slice = make([]interface{}, 0)
 }
 
-func (sl *sliceList) Contains(element Element) bool {
+func (sl *sliceList) Contains(element interface{}) bool {
 	for ix := range sl.slice {
 		if sl.slice[ix] == element {
 			return true
@@ -40,8 +40,8 @@ func (sl *sliceList) Contains(element Element) bool {
 	return false
 }
 
-func (sl *sliceList) ContainsAll(elements ...Element) bool {
-	tempMap := make(map[Element]bool, len(sl.slice))
+func (sl *sliceList) ContainsAll(elements ...interface{}) bool {
+	tempMap := make(map[interface{}]bool, len(sl.slice))
 
 	for ix := range sl.slice {
 		element := sl.slice[ix]
@@ -60,7 +60,7 @@ func (sl *sliceList) ContainsAll(elements ...Element) bool {
 	return true
 }
 
-func (sl *sliceList) GetAt(index int) (Element, bool) {
+func (sl *sliceList) GetAt(index int) (interface{}, bool) {
 	if index >= 0 && index < len(sl.slice) {
 		return sl.slice[index], true
 	}
@@ -72,12 +72,12 @@ func (sl *sliceList) Length() int {
 	return len(sl.slice)
 }
 
-func (sl *sliceList) Remove(element Element) int {
+func (sl *sliceList) Remove(element interface{}) int {
 	for ix := range sl.slice {
 		e := sl.slice[ix]
 
 		if e == element {
-			slice1 := make([]Element, ix)
+			slice1 := make([]interface{}, ix)
 			copy(slice1, sl.slice[:ix])
 
 			for jx := ix + 1; jx < len(sl.slice); jx++ {
@@ -92,13 +92,13 @@ func (sl *sliceList) Remove(element Element) int {
 	return 0
 }
 
-func (sl *sliceList) RemoveAt(index int) (Element, bool) {
+func (sl *sliceList) RemoveAt(index int) (interface{}, bool) {
 	e, found := sl.GetAt(index)
 
 	if found {
 		length := sl.Length()
-		first := make([]Element, index)
-		second := make([]Element, length-index-1)
+		first := make([]interface{}, index)
+		second := make([]interface{}, length-index-1)
 		copy(first, sl.slice[:index])
 		copy(second, sl.slice[index+1:])
 		first = append(first, second...)
@@ -113,7 +113,7 @@ func (sl *sliceList) RemoveAllAt(indexes ...int) int {
 	sort.Ints(indexes)
 	length := sl.Length()
 	lastIndex := 0
-	newSlice := make([]Element, 0)
+	newSlice := make([]interface{}, 0)
 
 	for ix := range indexes {
 		index := indexes[ix]
@@ -133,8 +133,8 @@ func (sl *sliceList) RemoveAllAt(indexes ...int) int {
 	return length - len(newSlice)
 }
 
-func (sl *sliceList) RemoveAll(elements ...Element) int {
-	tempMap := make(map[Element][]int, 0)
+func (sl *sliceList) RemoveAll(elements ...interface{}) int {
+	tempMap := make(map[interface{}][]int, 0)
 
 	for ix := range sl.slice {
 		element := sl.slice[ix]
@@ -159,7 +159,7 @@ func (sl *sliceList) RemoveAll(elements ...Element) int {
 	return sl.RemoveAllAt(removables...)
 }
 
-func (sl *sliceList) SetAt(index int, element Element) (Element, bool) {
+func (sl *sliceList) SetAt(index int, element interface{}) (interface{}, bool) {
 	prev, found := sl.GetAt(index)
 
 	if found {
@@ -170,7 +170,15 @@ func (sl *sliceList) SetAt(index int, element Element) (Element, bool) {
 	return nil, false
 }
 
-// NewSliceList returns a new SliceList.
-func NewSliceList() List {
-	return &sliceList{slice: make([]Element, 0)}
+// NewSliceList returns a new SliceList with some default data. Note that the
+// data will be copied before storage.
+func NewSliceList(slice []interface{}) List {
+	slice1 := make([]interface{}, len(slice))
+	copy(slice1, slice)
+	return &sliceList{slice: slice1}
+}
+
+// NewDefaultSliceList returns a new default SliceList.
+func NewDefaultSliceList() List {
+	return &sliceList{slice: make([]interface{}, 0)}
 }

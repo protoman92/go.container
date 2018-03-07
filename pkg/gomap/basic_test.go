@@ -2,7 +2,10 @@ package gomap
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
+
+	gl "github.com/protoman92/gocontainer/pkg/gocollection"
 )
 
 func testMapBasicOps(t *testing.T, m Map) {
@@ -42,8 +45,32 @@ func testMapBasicOps(t *testing.T, m Map) {
 	fmt.Printf("Final map %v\n", m)
 }
 
+func testMapKeys(t *testing.T, m Map) {
+	/// Setup
+	keys := []interface{}{1, 2, 3, 4, 5}
+
+	/// When
+	for ix := range keys {
+		key := keys[ix]
+		m.Set(key, key)
+	}
+
+	/// Then
+	mapKeys := m.Keys()
+	bl := gl.NewSliceList(mapKeys)
+
+	for ix := range keys {
+		key := strconv.Itoa(keys[ix].(int))
+
+		if contains := bl.Contains(key); !contains {
+			t.Errorf("Should contain key")
+		}
+	}
+}
+
 func testMapAllOps(t *testing.T, mapFn func() Map) {
 	testMapBasicOps(t, mapFn())
+	testMapKeys(t, mapFn())
 }
 
 func testBasicMapAllOps(t *testing.T) {

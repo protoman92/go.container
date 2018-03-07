@@ -10,37 +10,41 @@ type clearRequest struct {
 }
 
 type containsRequest struct {
-	key     Key
+	key     interface{}
 	foundCh chan<- bool
 }
 
 type deleteRequest struct {
-	key   Key
+	key   interface{}
 	lenCh chan<- bool
+}
+
+type getResult struct {
+	element interface{}
+	found   bool
+}
+
+type getRequest struct {
+	key     interface{}
+	valueCh chan<- *getResult
 }
 
 type lenRequest struct {
 	lenCh chan<- int
 }
 
-type getResult struct {
-	element Value
-	found   bool
-}
-
-type getRequest struct {
-	key     Key
-	valueCh chan<- *getResult
+type keysRequest struct {
+	keysCh chan<- []interface{}
 }
 
 type setResult struct {
-	element Value
+	element interface{}
 	found   bool
 }
 
 type setRequest struct {
-	key   Key
-	value Value
+	key   interface{}
+	value interface{}
 	lenCh chan<- *setResult
 }
 
@@ -67,21 +71,21 @@ func (ccm *channelConcurrentMap) Clear() {
 }
 
 // This operation blocks until a value is received.
-func (ccm *channelConcurrentMap) Contains(key Key) bool {
+func (ccm *channelConcurrentMap) Contains(key interface{}) bool {
 	foundCh := make(chan bool, 0)
 	ccm.requestCh <- &containsRequest{key: key, foundCh: foundCh}
 	return <-foundCh
 }
 
 // This operation blocks until some value is received.
-func (ccm *channelConcurrentMap) Delete(key Key) bool {
+func (ccm *channelConcurrentMap) Delete(key interface{}) bool {
 	lenCh := make(chan bool, 0)
 	ccm.requestCh <- &deleteRequest{key: key, lenCh: lenCh}
 	return <-lenCh
 }
 
 // This operaton blocks until some value is received.
-func (ccm *channelConcurrentMap) Get(key Key) (Value, bool) {
+func (ccm *channelConcurrentMap) Get(key interface{}) (interface{}, bool) {
 	valueCh := make(chan *getResult, 0)
 	ccm.requestCh <- &getRequest{key: key, valueCh: valueCh}
 	result := <-valueCh
@@ -95,8 +99,15 @@ func (ccm *channelConcurrentMap) Length() int {
 	return <-requestCh
 }
 
+// This operation blocks untils keys are received.
+func (ccm *channelConcurrentMap) Keys() []interface{} {
+	keysCh := make(chan []interface{}, 0)
+	ccm.requestCh <- &keysRequest{keysCh: keysCh}
+	return <-keysCh
+}
+
 // This operaton blocks until some value is received.
-func (ccm *channelConcurrentMap) Set(key Key, value Value) (Value, bool) {
+func (ccm *channelConcurrentMap) Set(key interface{}, value interface{}) (interface{}, bool) {
 	lenCh := make(chan *setResult, 0)
 	ccm.requestCh <- &setRequest{key: key, value: value, lenCh: lenCh}
 	result := <-lenCh
@@ -118,12 +129,15 @@ func (ccm *channelConcurrentMap) loopMap() {
 			case *deleteRequest:
 				request.lenCh <- ccm.storage.Delete(request.key)
 
-			case *lenRequest:
-				request.lenCh <- ccm.storage.Length()
-
 			case *getRequest:
 				element, found := ccm.storage.Get(request.key)
 				request.valueCh <- &getResult{element: element, found: found}
+
+			case *lenRequest:
+				request.lenCh <- ccm.storage.Length()
+
+			case *keysRequest:
+				request.keysCh <- ccm.storage.Keys()
 
 			case *setRequest:
 				element, found := ccm.storage.Set(request.key, request.value)
