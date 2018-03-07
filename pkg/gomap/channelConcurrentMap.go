@@ -14,9 +14,14 @@ type containsRequest struct {
 	foundCh chan<- bool
 }
 
+type deleteResult struct {
+	prev  interface{}
+	found bool
+}
+
 type deleteRequest struct {
-	key   interface{}
-	lenCh chan<- bool
+	key      interface{}
+	resultCh chan<- *deleteResult
 }
 
 type getResult struct {
@@ -78,10 +83,11 @@ func (ccm *channelConcurrentMap) Contains(key interface{}) bool {
 }
 
 // This operation blocks until some value is received.
-func (ccm *channelConcurrentMap) Delete(key interface{}) bool {
-	lenCh := make(chan bool, 0)
-	ccm.requestCh <- &deleteRequest{key: key, lenCh: lenCh}
-	return <-lenCh
+func (ccm *channelConcurrentMap) Delete(key interface{}) (interface{}, bool) {
+	resultCh := make(chan *deleteResult, 0)
+	ccm.requestCh <- &deleteRequest{key: key, resultCh: resultCh}
+	result := <-resultCh
+	return result.prev, result.found
 }
 
 // This operaton blocks until some value is received.
@@ -127,7 +133,8 @@ func (ccm *channelConcurrentMap) loopMap() {
 				request.foundCh <- ccm.storage.Contains(request.key)
 
 			case *deleteRequest:
-				request.lenCh <- ccm.storage.Delete(request.key)
+				prev, found := ccm.storage.Delete(request.key)
+				request.resultCh <- &deleteResult{prev: prev, found: found}
 
 			case *getRequest:
 				element, found := ccm.storage.Get(request.key)
@@ -154,12 +161,12 @@ func (ccm *channelConcurrentMap) loopMap() {
 }
 
 // NewChannelConcurrentMap returns a new channel-based ConcurrentMap.
-func NewChannelConcurrentMap(storage Map) ConcurrentMap {
+func NewChannelConcurrentMap(storage Map) Map {
 	cm := &channelConcurrentMap{
 		storage:   storage,
 		requestCh: make(chan interface{}, 1),
 	}
 
 	go cm.loopMap()
-	return newConcurrentMap(cm)
+	return cm
 }

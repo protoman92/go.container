@@ -2,7 +2,6 @@ package gomap
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 
 	gl "github.com/protoman92/gocontainer/pkg/gocollection"
@@ -20,19 +19,23 @@ func testMapBasicOps(t *testing.T, m Map) {
 		t.Errorf("Should contain %v", key)
 	}
 
-	if getValue, getFound := m.Get(key); getValue != value || !getFound {
+	if val, found := m.Get(key); val != value || !found {
 		t.Errorf("Should contain %v with value %v", key, value)
 	}
 
-	deletedFound := m.Delete(key)
+	if prev, found := m.Delete(key); !found || prev == nil {
+		t.Errorf("Should delete key")
+	}
 
-	if getValue, getFound := m.Get(key); (getFound && m.Contains(key)) || getValue != nil || !deletedFound {
+	if val, found := m.Get(key); found || val != nil {
 		t.Errorf("Should not contain %v", key)
 	}
 
-	setPrev, setFound := m.Set(key, value)
+	if prev, found := m.Set(key, value); found || prev != nil {
+		t.Errorf("Should not have any previous value")
+	}
 
-	if length := m.Length(); length != 1 || setPrev != nil || setFound {
+	if length := m.Length(); length != 1 {
 		t.Errorf("Should have length 1, but got %d", length)
 	}
 
@@ -57,12 +60,10 @@ func testMapKeys(t *testing.T, m Map) {
 
 	/// Then
 	mapKeys := m.Keys()
-	bl := gl.NewSliceList(mapKeys)
+	bl := gl.NewSliceList(mapKeys...)
 
 	for ix := range keys {
-		key := strconv.Itoa(keys[ix].(int))
-
-		if contains := bl.Contains(key); !contains {
+		if contains := bl.Contains(keys[ix]); !contains {
 			t.Errorf("Should contain key")
 		}
 	}

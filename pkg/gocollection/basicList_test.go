@@ -28,6 +28,24 @@ func testListBasicOps(t *testing.T, list List) {
 	fmt.Printf("Final list: %v\n", list)
 }
 
+func testListIndexOf(t *testing.T, list List) {
+	/// Setup & When & Then
+	if index, found := list.IndexOf(0); found || index >= 0 {
+		t.Errorf("Should not have found index")
+	}
+
+	elements := []interface{}{1, 2, 3, 4, 5}
+	list.AddAll(elements...)
+
+	for ix := range elements {
+		element := elements[ix]
+
+		if index, found := list.IndexOf(element); !found || index < 0 {
+			t.Errorf("Should have found index")
+		}
+	}
+}
+
 func testListRemoveAt(t *testing.T, list List) {
 	/// Setup & When & Then
 	if _, found := list.RemoveAt(0); found {
@@ -84,6 +102,7 @@ func testListAllOps(t *testing.T, listFn func() List) {
 	})
 
 	testListBasicOps(t, listFn())
+	testListIndexOf(t, listFn())
 	testListRemoveAt(t, listFn())
 	testListSetAt(t, listFn())
 }
@@ -109,7 +128,7 @@ func TestSliceListWithExistingList(t *testing.T) {
 	/// Setup
 	array1 := [4]interface{}{1, 2, 3, 4}
 	slice1 := array1[:]
-	list := NewSliceList(slice1)
+	list := NewSliceList(slice1...)
 
 	/// When
 	array1[3] = 5
@@ -121,5 +140,30 @@ func TestSliceListWithExistingList(t *testing.T) {
 
 	if contains := list.Contains(5); contains {
 		t.Errorf("Should not retain array reference")
+	}
+
+	for _, e := range slice1[:2] {
+		if contains := list.Contains(e); !contains {
+			t.Errorf("Should contain element")
+		}
+	}
+}
+
+func TestSliceRange(t *testing.T) {
+	/// Setup
+	list1 := NewSliceListForRange(10, -1, 2)
+	list2 := NewSliceListForRange(1, 10, 1)
+
+	/// When & Then
+	if length := list1.Length(); length != 0 {
+		t.Errorf("Should not have any element")
+	}
+
+	if contains := list2.Contains(10); contains {
+		t.Errorf("Should not contain element")
+	}
+
+	if length := list2.Length(); length != 9 {
+		t.Errorf("Wrong element count")
 	}
 }

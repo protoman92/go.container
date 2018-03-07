@@ -68,6 +68,16 @@ func (sl *sliceList) GetAt(index int) (interface{}, bool) {
 	return nil, false
 }
 
+func (sl *sliceList) IndexOf(element interface{}) (int, bool) {
+	for ix := range sl.slice {
+		if sl.slice[ix] == element {
+			return ix, true
+		}
+	}
+
+	return -1, false
+}
+
 func (sl *sliceList) Length() int {
 	return len(sl.slice)
 }
@@ -172,13 +182,29 @@ func (sl *sliceList) SetAt(index int, element interface{}) (interface{}, bool) {
 
 // NewSliceList returns a new SliceList with some default data. Note that the
 // data will be copied before storage.
-func NewSliceList(slice []interface{}) List {
-	slice1 := make([]interface{}, len(slice))
-	copy(slice1, slice)
+func NewSliceList(elements ...interface{}) List {
+	slice1 := make([]interface{}, len(elements))
+	copy(slice1, elements)
 	return &sliceList{slice: slice1}
 }
 
 // NewDefaultSliceList returns a new default SliceList.
 func NewDefaultSliceList() List {
 	return &sliceList{slice: make([]interface{}, 0)}
+}
+
+// NewSliceListForRange returns a new SliceList containing all integers lying
+// between an inclusive lower bound and an exclusive upper bound.
+func NewSliceListForRange(inclusive int, exclusive int, step int) List {
+	if exclusive < inclusive {
+		exclusive = inclusive
+	}
+
+	slice1 := make([]interface{}, 0)
+
+	for i := inclusive; i < exclusive; i += step {
+		slice1 = append(slice1, i)
+	}
+
+	return NewSliceList(slice1...)
 }

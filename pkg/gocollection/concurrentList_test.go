@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func testListConcurrentOps(tb testing.TB, cl ConcurrentList) {
-	keyCount := 1000
+func testListConcurrentOps(tb testing.TB, cl List) {
+	keyCount := 500
 	keys := make([]interface{}, keyCount)
 
 	for ix := range keys {
@@ -32,89 +32,106 @@ func testListConcurrentOps(tb testing.TB, cl ConcurrentList) {
 	wgAccess := setupConcurrentCollectionOps(params)
 
 	// Get
-	for ix := range keys {
-		wgAccess().Add(1)
+	go func() {
+		for ix := range keys {
+			wgAccess().Add(1)
 
-		go func(ix int) {
-			time.Sleep(sleepRandomizer())
+			go func(ix int) {
+				time.Sleep(sleepRandomizer())
 
-			cl.GetAtAsync(ix, func(e interface{}, found bool) {
-				if params.log {
+				if e, found := cl.GetAt(ix); params.log {
 					fmt.Printf("Got element %v, found: %t\n", e, found)
 				}
 
 				wgAccess().Done()
-			})
-		}(ix)
-	}
+			}(ix)
+		}
+	}()
+
+	go func() {
+		for ix := range keys {
+			wgAccess().Add(1)
+
+			go func(key interface{}) {
+				time.Sleep(sleepRandomizer())
+
+				if ix, found := cl.IndexOf(key); params.log {
+					fmt.Printf("Got index %d, found: %t\n", ix, found)
+				}
+
+				wgAccess().Done()
+			}(keys[ix])
+		}
+	}()
 
 	// Modify
-	for ix := range keys {
-		wgAccess().Add(1)
+	go func() {
+		for ix := range keys {
+			wgAccess().Add(1)
 
-		go func(ix int) {
-			time.Sleep(sleepRandomizer())
+			go func(ix int) {
+				time.Sleep(sleepRandomizer())
 
-			cl.RemoveAtAsync(ix, func(e interface{}, found bool) {
-				if params.log {
+				if e, found := cl.RemoveAt(ix); params.log {
 					fmt.Printf("Deleted element %v, found: %t\n", e, found)
 				}
 
 				wgAccess().Done()
-			})
-		}(ix)
-	}
-
-	for ix := range keys {
-		wgAccess().Add(1)
-
-		indexes := make([]int, 0)
-
-		for jx := range keys {
-			indexes = append(indexes, jx)
+			}(ix)
 		}
+	}()
 
-		go func(ix int) {
-			time.Sleep(sleepRandomizer())
+	go func() {
+		for ix := range keys {
+			wgAccess().Add(1)
 
-			cl.RemoveAllAtAsync(func(deleted int) {
-				if params.log {
+			indexes := make([]int, 0)
+
+			for jx := range keys {
+				indexes = append(indexes, jx)
+			}
+
+			go func(ix int) {
+				time.Sleep(sleepRandomizer())
+
+				if deleted := cl.RemoveAllAt(indexes...); params.log {
 					fmt.Printf("Deleted %d elements\n", deleted)
 				}
 
 				wgAccess().Done()
-			}, indexes...)
-		}(ix)
-	}
+			}(ix)
+		}
+	}()
 
-	for ix := range keys {
-		wgAccess().Add(1)
+	go func() {
+		for ix := range keys {
+			wgAccess().Add(1)
 
-		go func(ix int) {
-			time.Sleep(sleepRandomizer())
+			go func(ix int) {
+				time.Sleep(sleepRandomizer())
 
-			cl.SetAtAsync(ix, keys[ix], func(e interface{}, found bool) {
-				if params.log {
+				if e, found := cl.SetAt(ix, keys[ix]); params.log {
 					fmt.Printf("Prev element %v, found: %t\n", e, found)
 				}
 
 				wgAccess().Done()
-			})
-		}(ix)
-	}
+			}(ix)
+		}
+	}()
 
+	time.Sleep(time.Millisecond)
 	wgAccess().Wait()
 	fmt.Printf("Final storage state: %v", cl)
 }
 
-func benchmarkListConcurrentOps(b *testing.B, clFn func() ConcurrentList) {
+func benchmarkListConcurrentOps(b *testing.B, clFn func() List) {
 	for i := 0; i < b.N; i++ {
 		testListConcurrentOps(b, clFn())
 	}
 }
 
 func BenchmarkLockSliceListConcurrentOps(b *testing.B) {
-	benchmarkListConcurrentOps(b, func() ConcurrentList {
+	benchmarkListConcurrentOps(b, func() List {
 		sl := NewDefaultSliceList()
 		return NewLockConcurrentList(sl)
 	})

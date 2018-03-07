@@ -4,7 +4,7 @@ package gomap
 type Map interface {
 	Clear()
 	Contains(key interface{}) bool
-	Delete(key interface{}) bool
+	Delete(key interface{}) (interface{}, bool)
 	Get(key interface{}) (interface{}, bool)
 	Keys() []interface{}
 	Length() int

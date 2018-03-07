@@ -8,7 +8,7 @@ import (
 )
 
 type ConcurrentOpsParams struct {
-	concurrentCollection ConcurrentCollection
+	concurrentCollection Collection
 	log                  bool
 	keys                 []interface{}
 	opSleepDuration      func() time.Duration
@@ -34,102 +34,103 @@ func setupConcurrentCollectionOps(params *ConcurrentOpsParams) func() *sync.Wait
 
 	/// When & Then
 	// Modify
-	for _, key := range keys {
-		accessWaitGroup().Add(1)
+	go func() {
+		for _, key := range keys {
+			accessWaitGroup().Add(1)
 
-		go func(key interface{}) {
-			time.Sleep(params.opSleepDuration())
+			go func(key interface{}) {
+				time.Sleep(params.opSleepDuration())
 
-			cl.AddAsync(key, func(added int) {
-				if params.log {
+				if added := cl.Add(key); params.log {
 					fmt.Printf("Added %v, added count: %v\n", key, added)
 				}
 
 				accessWaitGroup().Done()
-			})
-		}(key)
-	}
+			}(key)
+		}
+	}()
 
-	for i := 0; i < len(keys); i++ {
-		accessWaitGroup().Add(1)
+	go func() {
+		for i := 0; i < len(keys); i++ {
+			accessWaitGroup().Add(1)
 
-		go func() {
-			time.Sleep(params.opSleepDuration())
+			go func() {
+				time.Sleep(params.opSleepDuration())
 
-			cl.AddAllAsync(func(added int) {
-				if params.log {
+				if added := cl.AddAll(keys...); params.log {
 					fmt.Printf("Added %d elements\n", added)
 				}
 
 				accessWaitGroup().Done()
-			}, keys...)
-		}()
-	}
+			}()
+		}
+	}()
 
-	for _, key := range keys {
-		accessWaitGroup().Add(1)
+	go func() {
+		for _, key := range keys {
+			accessWaitGroup().Add(1)
 
-		go func(key interface{}) {
-			time.Sleep(params.opSleepDuration())
+			go func(key interface{}) {
+				time.Sleep(params.opSleepDuration())
 
-			cl.RemoveAsync(key, func(removed int) {
-				if params.log {
+				if removed := cl.Remove(key); params.log {
 					fmt.Printf("Deleted %v, removed count: %d\n", key, removed)
 				}
 
 				accessWaitGroup().Done()
-			})
-		}(key)
-	}
+			}(key)
+		}
+	}()
 
-	for i := 0; i < len(keys); i++ {
-		accessWaitGroup().Add(1)
+	go func() {
+		for i := 0; i < len(keys); i++ {
+			accessWaitGroup().Add(1)
 
-		go func() {
-			time.Sleep(params.opSleepDuration())
+			go func() {
+				time.Sleep(params.opSleepDuration())
+				cl.Clear()
 
-			cl.ClearAsync(func() {
 				if params.log {
 					fmt.Printf("Cleared all contents\n")
 				}
 
 				accessWaitGroup().Done()
-			})
-		}()
-	}
+			}()
+		}
+	}()
 
 	// Get
-	for _, key := range keys {
-		accessWaitGroup().Add(1)
+	go func() {
+		for _, key := range keys {
+			accessWaitGroup().Add(1)
 
-		go func(key interface{}) {
-			time.Sleep(params.opSleepDuration())
+			go func(key interface{}) {
+				time.Sleep(params.opSleepDuration())
 
-			cl.ContainsAsync(key, func(found bool) {
-				if params.log {
+				if found := cl.Contains(key); params.log {
 					fmt.Printf("Contains element %v: %t\n", key, found)
 				}
 
 				accessWaitGroup().Done()
-			})
-		}(key)
-	}
+			}(key)
+		}
+	}()
 
-	for i := 0; i < len(keys); i++ {
-		accessWaitGroup().Add(1)
+	go func() {
+		for i := 0; i < len(keys); i++ {
+			accessWaitGroup().Add(1)
 
-		go func() {
-			time.Sleep(params.opSleepDuration())
+			go func() {
+				time.Sleep(params.opSleepDuration())
 
-			cl.LengthAsync(func(len int) {
-				if params.log {
+				if len := cl.Length(); params.log {
 					fmt.Printf("Current length: %d\n", len)
 				}
 
 				accessWaitGroup().Done()
-			})
-		}()
-	}
+			}()
+		}
+	}()
 
 	return accessWaitGroup
 }

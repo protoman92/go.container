@@ -26,6 +26,13 @@ func (lcl *lockConcurrentList) GetAt(index int) (interface{}, bool) {
 	return e, found
 }
 
+func (lcl *lockConcurrentList) IndexOf(element interface{}) (int, bool) {
+	lcl.mutex.RLock()
+	defer lcl.mutex.RUnlock()
+	index, found := lcl.list.IndexOf(element)
+	return index, found
+}
+
 func (lcl *lockConcurrentList) RemoveAt(index int) (interface{}, bool) {
 	lcl.mutex.Lock()
 	defer lcl.mutex.Unlock()
@@ -46,7 +53,7 @@ func (lcl *lockConcurrentList) SetAt(index int, element interface{}) (interface{
 }
 
 // NewLockConcurrentList returns a new LockConcurrentList.
-func NewLockConcurrentList(list List) ConcurrentList {
+func NewLockConcurrentList(list List) List {
 	mutex := &sync.RWMutex{}
 	lcc := &lockConcurrentCollection{mutex: mutex, storage: list}
 
@@ -56,5 +63,5 @@ func NewLockConcurrentList(list List) ConcurrentList {
 		mutex: mutex,
 	}
 
-	return newConcurrentList(lcl)
+	return lcl
 }

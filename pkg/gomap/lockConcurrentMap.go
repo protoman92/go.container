@@ -28,10 +28,11 @@ func (lcm *lockConcurrentMap) Contains(key interface{}) bool {
 	return lcm.storage.Contains(key)
 }
 
-func (lcm *lockConcurrentMap) Delete(key interface{}) bool {
+func (lcm *lockConcurrentMap) Delete(key interface{}) (interface{}, bool) {
 	lcm.mutex.Lock()
 	defer lcm.mutex.Unlock()
-	return lcm.storage.Delete(key)
+	prev, found := lcm.storage.Delete(key)
+	return prev, found
 }
 
 func (lcm *lockConcurrentMap) Get(key interface{}) (interface{}, bool) {
@@ -59,7 +60,6 @@ func (lcm *lockConcurrentMap) Set(key interface{}, value interface{}) (interface
 }
 
 // NewLockConcurrentMap returns a new lock-based ConcurrentMap.
-func NewLockConcurrentMap(storage Map) ConcurrentMap {
-	cm := &lockConcurrentMap{mutex: &sync.RWMutex{}, storage: storage}
-	return newConcurrentMap(cm)
+func NewLockConcurrentMap(storage Map) Map {
+	return &lockConcurrentMap{mutex: &sync.RWMutex{}, storage: storage}
 }
