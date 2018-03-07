@@ -4,18 +4,20 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 )
 
-type ConcurrentCollectionOpsParams struct {
+type ConcurrentOpsParams struct {
 	concurrentCollection ConcurrentCollection
 	log                  bool
-	keyCount             int
+	keys                 []string
+	opSleepDuration      func() time.Duration
 }
 
-func setupConcurrentCollectionOps(params *ConcurrentCollectionOpsParams) {
+func setupConcurrentCollectionOps(params *ConcurrentOpsParams) func() *sync.WaitGroup {
 	/// Setup
 	cl := params.concurrentCollection
-	keys := make([]string, params.keyCount)
+	keys := params.keys
 
 	for ix := range keys {
 		keys[ix] = strconv.Itoa(ix)
@@ -36,9 +38,11 @@ func setupConcurrentCollectionOps(params *ConcurrentCollectionOpsParams) {
 		accessWaitGroup().Add(1)
 
 		go func(key string) {
+			time.Sleep(params.opSleepDuration())
+
 			cl.AddAsync(key, func(added int) {
 				if params.log {
-					fmt.Printf("Added %v. Total added: %v\n", key, added)
+					fmt.Printf("Added %v, added count: %v\n", key, added)
 				}
 
 				accessWaitGroup().Done()
@@ -50,9 +54,11 @@ func setupConcurrentCollectionOps(params *ConcurrentCollectionOpsParams) {
 		accessWaitGroup().Add(1)
 
 		go func(key string) {
-			cl.RemoveAsync(key, func(found bool) {
+			time.Sleep(params.opSleepDuration())
+
+			cl.RemoveAsync(key, func(removed int) {
 				if params.log {
-					fmt.Printf("Deleted %v, found: %t\n", key, found)
+					fmt.Printf("Deleted %v, removed count: %d\n", key, removed)
 				}
 
 				accessWaitGroup().Done()
@@ -64,6 +70,8 @@ func setupConcurrentCollectionOps(params *ConcurrentCollectionOpsParams) {
 		accessWaitGroup().Add(1)
 
 		go func() {
+			time.Sleep(params.opSleepDuration())
+
 			cl.ClearAsync(func() {
 				if params.log {
 					fmt.Printf("Cleared all contents\n")
@@ -79,6 +87,8 @@ func setupConcurrentCollectionOps(params *ConcurrentCollectionOpsParams) {
 		accessWaitGroup().Add(1)
 
 		go func(key string) {
+			time.Sleep(params.opSleepDuration())
+
 			cl.ContainsAsync(key, func(found bool) {
 				if params.log {
 					fmt.Printf("Contains element %v: %t\n", key, found)
@@ -93,6 +103,8 @@ func setupConcurrentCollectionOps(params *ConcurrentCollectionOpsParams) {
 		accessWaitGroup().Add(1)
 
 		go func() {
+			time.Sleep(params.opSleepDuration())
+
 			cl.LengthAsync(func(len int) {
 				if params.log {
 					fmt.Printf("Current length: %d\n", len)
@@ -103,5 +115,5 @@ func setupConcurrentCollectionOps(params *ConcurrentCollectionOpsParams) {
 		}()
 	}
 
-	accessWaitGroup().Wait()
+	return accessWaitGroup
 }

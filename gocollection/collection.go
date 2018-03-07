@@ -9,7 +9,9 @@ type Collection interface {
 	Add(element Element) int
 	AddAll(elements ...Element) int
 	Contains(element Element) bool
+	ContainsAll(elements ...Element) bool
 	Clear()
 	Length() int
-	Remove(element Element) bool
+	Remove(element Element) int
+	RemoveAll(elements ...Element) int
 }

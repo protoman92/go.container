@@ -1,10 +1,19 @@
 package gomap
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 type lockConcurrentMap struct {
 	mutex   *sync.RWMutex
 	storage Map
+}
+
+func (lcm *lockConcurrentMap) String() string {
+	lcm.mutex.RLock()
+	defer lcm.mutex.RUnlock()
+	return fmt.Sprint(lcm.storage)
 }
 
 func (lcm *lockConcurrentMap) Clear() {

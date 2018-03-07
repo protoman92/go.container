@@ -1,10 +1,11 @@
 package gomap
 
 import (
+	"fmt"
 	"testing"
 )
 
-func testMapBasicOps(tb testing.TB, m Map) {
+func testMapBasicOps(t *testing.T, m Map) {
 	/// Setup
 	key := "Key"
 	value := "Value"
@@ -13,30 +14,32 @@ func testMapBasicOps(tb testing.TB, m Map) {
 	m.Set(key, value)
 
 	if !m.Contains(key) {
-		tb.Errorf("Should contain %v", key)
+		t.Errorf("Should contain %v", key)
 	}
 
-	getValue1, getFound1 := m.Get(key)
-
-	if getValue1 != value || !getFound1 {
-		tb.Errorf("Should contain %v with value %v", key, value)
+	if getValue, getFound := m.Get(key); getValue != value || !getFound {
+		t.Errorf("Should contain %v with value %v", key, value)
 	}
 
 	deletedFound := m.Delete(key)
-	getValue2, getFound2 := m.Get(key)
 
-	if (getFound2 && m.Contains(key)) || getValue2 != nil || !deletedFound {
-		tb.Errorf("Should not contain %v", key)
+	if getValue, getFound := m.Get(key); (getFound && m.Contains(key)) || getValue != nil || !deletedFound {
+		t.Errorf("Should not contain %v", key)
 	}
 
 	setPrev, setFound := m.Set(key, value)
-	length := m.Length()
 
-	if length != 1 || setPrev != nil || setFound {
-		tb.Errorf("Should have length 1, but got %d", length)
+	if length := m.Length(); length != 1 || setPrev != nil || setFound {
+		t.Errorf("Should have length 1, but got %d", length)
 	}
 
 	m.Clear()
+
+	if length := m.Length(); length > 0 {
+		t.Errorf("Should not contain anything")
+	}
+
+	fmt.Printf("Final map %v\n", m)
 }
 
 func testMapAllOps(t *testing.T, mapFn func() Map) {

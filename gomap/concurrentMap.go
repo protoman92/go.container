@@ -1,5 +1,9 @@
 package gomap
 
+import (
+	"fmt"
+)
+
 // ConcurrentMap represents a thread-safe Map.
 type ConcurrentMap interface {
 	Map
@@ -15,6 +19,10 @@ type ConcurrentMap interface {
 // funtionalities (such as async operations).
 type concurrentMap struct {
 	Map
+}
+
+func (cm *concurrentMap) String() string {
+	return fmt.Sprint(cm.Map)
 }
 
 func (cm *concurrentMap) ContainsAsync(key Key, callback func(bool)) {

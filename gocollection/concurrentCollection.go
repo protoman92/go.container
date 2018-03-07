@@ -1,5 +1,9 @@
 package gocollection
 
+import (
+	"fmt"
+)
+
 // ConcurrentCollection represents a thread-safe Collection.
 type ConcurrentCollection interface {
 	Collection
@@ -8,11 +12,15 @@ type ConcurrentCollection interface {
 	ClearAsync(callback func())
 	ContainsAsync(element Element, callback func(bool))
 	LengthAsync(callback func(int))
-	RemoveAsync(element Element, callback func(bool))
+	RemoveAsync(element Element, callback func(int))
 }
 
 type concurrentCollection struct {
 	Collection
+}
+
+func (cc *concurrentCollection) String() string {
+	return fmt.Sprint(cc.Collection)
 }
 
 func (cc *concurrentCollection) AddAsync(element Element, callback func(int)) {
@@ -50,7 +58,7 @@ func (cc *concurrentCollection) LengthAsync(callback func(int)) {
 	}()
 }
 
-func (cc *concurrentCollection) RemoveAsync(element Element, callback func(bool)) {
+func (cc *concurrentCollection) RemoveAsync(element Element, callback func(int)) {
 	go func() {
 		found := cc.Remove(element)
 		callback(found)

@@ -2,15 +2,18 @@ package gomap
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 )
 
 type ConcurrentMapOpsParams struct {
-	concurrentMap ConcurrentMap
-	log           bool
-	keyCount      int
+	concurrentMap   ConcurrentMap
+	log             bool
+	keyCount        int
+	opSleepDuration func() time.Duration
 }
 
 func setupConcurrentMapOps(params *ConcurrentMapOpsParams) {
@@ -37,6 +40,8 @@ func setupConcurrentMapOps(params *ConcurrentMapOpsParams) {
 		accessWaitGroup().Add(1)
 
 		go func(key string) {
+			time.Sleep(params.opSleepDuration())
+
 			cm.SetAsync(key, key, func(prev Value, found bool) {
 				if params.log {
 					fmt.Printf("Set key %v-value %v. Prev value: %v\n", key, key, prev)
@@ -51,6 +56,8 @@ func setupConcurrentMapOps(params *ConcurrentMapOpsParams) {
 		accessWaitGroup().Add(1)
 
 		go func(key string) {
+			time.Sleep(params.opSleepDuration())
+
 			cm.DeleteAsync(key, func(found bool) {
 				if params.log {
 					fmt.Printf("Deleted key %v, found: %t\n", key, found)
@@ -65,6 +72,8 @@ func setupConcurrentMapOps(params *ConcurrentMapOpsParams) {
 		accessWaitGroup().Add(1)
 
 		go func() {
+			time.Sleep(params.opSleepDuration())
+
 			cm.ClearAsync(func() {
 				if params.log {
 					fmt.Printf("Cleared all contents\n")
@@ -80,6 +89,8 @@ func setupConcurrentMapOps(params *ConcurrentMapOpsParams) {
 		accessWaitGroup().Add(1)
 
 		go func(key string) {
+			time.Sleep(params.opSleepDuration())
+
 			cm.GetAsync(key, func(value Value, found bool) {
 				if params.log {
 					fmt.Printf("Got %v for key %v, found: %t\n", value, key, found)
@@ -94,6 +105,8 @@ func setupConcurrentMapOps(params *ConcurrentMapOpsParams) {
 		accessWaitGroup().Add(1)
 
 		go func(key string) {
+			time.Sleep(params.opSleepDuration())
+
 			cm.ContainsAsync(key, func(found bool) {
 				if params.log {
 					fmt.Printf("Contains key %v: %t\n", key, found)
@@ -108,6 +121,8 @@ func setupConcurrentMapOps(params *ConcurrentMapOpsParams) {
 		accessWaitGroup().Add(1)
 
 		go func() {
+			time.Sleep(params.opSleepDuration())
+
 			cm.LengthAsync(func(len int) {
 				if params.log {
 					fmt.Printf("Current length: %d\n", len)
@@ -123,13 +138,21 @@ func setupConcurrentMapOps(params *ConcurrentMapOpsParams) {
 	/// Then
 	// It does not matter what we assert here - running the tests with race mode
 	// will automatically fail if concurrent ops are not performed correctly.
+	fmt.Printf("Final map %v\n", cm)
 }
 
 func testConcurrentMapConcurrentOps(tb testing.TB, cm ConcurrentMap) {
+	sleepRandomizer := func() time.Duration {
+		var min, max time.Duration = 1e8, 5e8
+		duration := min + time.Duration(rand.Int63n(int64(max-min)))
+		return duration
+	}
+
 	params := &ConcurrentMapOpsParams{
-		concurrentMap: cm,
-		log:           false,
-		keyCount:      500,
+		concurrentMap:   cm,
+		log:             false,
+		keyCount:        1000,
+		opSleepDuration: sleepRandomizer,
 	}
 
 	setupConcurrentMapOps(params)
@@ -156,14 +179,12 @@ func BenchmarkLockConcurrentMapConcurrentOps(b *testing.B) {
 }
 
 func TestChannelConcurrentMapConcurrentOps(t *testing.T) {
-	t.Parallel()
 	bm := NewDefaultBasicMap()
 	cm := NewChannelConcurrentMap(bm)
 	testConcurrentMapConcurrentOps(t, cm)
 }
 
 func TestLockConcurrentMapConcurrentOps(t *testing.T) {
-	t.Parallel()
 	bm := NewDefaultBasicMap()
 	cm := NewLockConcurrentMap(bm)
 	testConcurrentMapConcurrentOps(t, cm)

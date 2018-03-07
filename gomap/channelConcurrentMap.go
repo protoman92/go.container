@@ -44,9 +44,19 @@ type setRequest struct {
 	lenCh chan<- *setResult
 }
 
+type stringRequest struct {
+	strCh chan<- string
+}
+
 type channelConcurrentMap struct {
 	storage   Map
 	requestCh chan interface{}
+}
+
+func (ccm *channelConcurrentMap) String() string {
+	strCh := make(chan string, 0)
+	ccm.requestCh <- &stringRequest{strCh: strCh}
+	return <-strCh
 }
 
 // This operation blocks until some result is received.
@@ -118,6 +128,9 @@ func (ccm *channelConcurrentMap) loopMap() {
 			case *setRequest:
 				element, found := ccm.storage.Set(request.key, request.value)
 				request.lenCh <- &setResult{element: element, found: found}
+
+			case *stringRequest:
+				request.strCh <- fmt.Sprint(ccm.storage)
 
 			default:
 				panic(fmt.Sprintf("Unrecognized req type %v", reflect.TypeOf(request)))
