@@ -107,6 +107,10 @@ func testCollectionAdd(t *testing.T, c Collection) {
 	if containsAll := c.ContainsAll(combinedSlice2...); containsAll {
 		t.Errorf("Should not contain all")
 	}
+
+	if added != addCount+addAllCount {
+		t.Errorf("Wrong number of elements added")
+	}
 }
 
 func testCollectionRemove(t *testing.T, c Collection) {
