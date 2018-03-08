@@ -49,3 +49,36 @@ func TestUnsupportedRequestShouldPanic(t *testing.T) {
 		t.Errorf("Should have panicked")
 	}
 }
+
+func TestChannelConncurrentMapCloseRequest(t *testing.T) {
+	/// Setup
+	doneCh := make(chan interface{}, 1)
+	timeout := time.After(time.Second)
+	bm := NewBasicMap(BasicMapParams{})
+	cm := NewChannelConcurrentMap(bm)
+	key := "Key"
+
+	/// When
+	cm.Close()
+
+	go func() {
+		defer func() {
+			if e := recover(); e != nil {
+				doneCh <- true
+			}
+		}()
+
+		cm.Set(key, "Value")
+	}()
+
+	time.Sleep(time.Millisecond)
+
+	/// Then
+	select {
+	case <-doneCh:
+		break
+
+	case <-timeout:
+		t.Errorf("Should have quit loop")
+	}
+}

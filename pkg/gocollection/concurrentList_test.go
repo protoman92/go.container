@@ -2,7 +2,6 @@ package gocollection
 
 import (
 	"fmt"
-	"math/rand"
 	"strconv"
 	"testing"
 	"time"
@@ -17,9 +16,7 @@ func testListConcurrentOps(tb testing.TB, cl List) {
 	}
 
 	sleepRandomizer := func() time.Duration {
-		var min, max time.Duration = 1e8, 5e8
-		duration := min + time.Duration(rand.Int63n(int64(max-min)))
-		return duration
+		return time.Duration(1e6)
 	}
 
 	params := &ConcurrentOpsParams{

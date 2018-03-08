@@ -2,7 +2,6 @@ package gomap
 
 import (
 	"fmt"
-	"math/rand"
 	"strconv"
 	"sync"
 	"testing"
@@ -140,14 +139,11 @@ func setupConcurrentMapOps(params *ConcurrentMapOpsParams) {
 	/// Then
 	// It does not matter what we assert here - running the tests with race mode
 	// will automatically fail if concurrent ops are not performed correctly.
-	fmt.Printf("Final map %v\n", cm)
 }
 
 func testConcurrentMapConcurrentOps(tb testing.TB, cm Map) {
 	sleepRandomizer := func() time.Duration {
-		var min, max time.Duration = 1e8, 5e8
-		duration := min + time.Duration(rand.Int63n(int64(max-min)))
-		return duration
+		return time.Duration(1e6)
 	}
 
 	params := &ConcurrentMapOpsParams{
@@ -184,10 +180,12 @@ func TestChannelConcurrentMapConcurrentOps(t *testing.T) {
 	bm := NewDefaultBasicMap()
 	cm := NewChannelConcurrentMap(bm)
 	testConcurrentMapConcurrentOps(t, cm)
+	fmt.Printf("Final map %v\n", cm)
 }
 
 func TestLockConcurrentMapConcurrentOps(t *testing.T) {
 	bm := NewDefaultBasicMap()
 	cm := NewLockConcurrentMap(bm)
 	testConcurrentMapConcurrentOps(t, cm)
+	fmt.Printf("Final map %v\n", cm)
 }

@@ -5,6 +5,12 @@ import (
 	"reflect"
 )
 
+// ChannelConcurrentMap represents a channel-based ConcurrentMap.
+type ChannelConcurrentMap interface {
+	Map
+	Close()
+}
+
 type clearRequest struct {
 	doneCh chan<- interface{}
 }
@@ -60,6 +66,10 @@ type stringRequest struct {
 type channelConcurrentMap struct {
 	storage   Map
 	requestCh chan interface{}
+}
+
+func (ccm *channelConcurrentMap) Close() {
+	close(ccm.requestCh)
 }
 
 func (ccm *channelConcurrentMap) String() string {
@@ -123,7 +133,11 @@ func (ccm *channelConcurrentMap) Set(key interface{}, value interface{}) (interf
 func (ccm *channelConcurrentMap) loopMap() {
 	for {
 		select {
-		case request := <-ccm.requestCh:
+		case request, ok := <-ccm.requestCh:
+			if !ok {
+				return
+			}
+
 			switch request := request.(type) {
 			case *clearRequest:
 				ccm.storage.Clear()
@@ -160,8 +174,8 @@ func (ccm *channelConcurrentMap) loopMap() {
 	}
 }
 
-// NewChannelConcurrentMap returns a new channel-based ConcurrentMap.
-func NewChannelConcurrentMap(storage Map) Map {
+// NewChannelConcurrentMap returns a ChannelConcurrentMap.
+func NewChannelConcurrentMap(storage Map) ChannelConcurrentMap {
 	cm := &channelConcurrentMap{
 		storage:   storage,
 		requestCh: make(chan interface{}, 1),
