@@ -118,7 +118,7 @@ func testListConcurrentOps(tb testing.TB, cl List) {
 
 	time.Sleep(time.Millisecond)
 	wgAccess().Wait()
-	fmt.Printf("Final storage state: %v", cl)
+	fmt.Printf("Final storage state: %v\n", cl)
 }
 
 func benchmarkListConcurrentOps(b *testing.B, clFn func() List) {

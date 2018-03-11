@@ -7,6 +7,7 @@ type Collection interface {
 	AddAll(elements ...interface{}) int
 	Contains(element interface{}) bool
 	ContainsAll(elements ...interface{}) bool
+	GetAllFunc(selector func(interface{}) bool) []interface{}
 	Clear()
 	Length() int
 	Remove(element interface{}) int

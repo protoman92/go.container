@@ -121,6 +121,27 @@ func testCollectionAdd(t *testing.T, c Collection) {
 	}
 }
 
+func testCollectionGetAllFunc(t *testing.T, c Collection) {
+	/// Setup
+	c.AddAll(1, 2, 3, 4, 5, 6, 7)
+
+	/// When
+	results := c.GetAllFunc(func(e interface{}) bool {
+		if e, ok := e.(int); ok && e%2 == 0 {
+			return true
+		}
+
+		return false
+	})
+
+	list := NewSliceList(results...)
+
+	/// Then
+	if contains := list.ContainsAll(2, 4, 6); !contains {
+		t.Errorf("Should contain correct elements")
+	}
+}
+
 func testCollectionRemove(t *testing.T, c Collection) {
 	/// Setup
 	addCount := 1000
@@ -155,5 +176,6 @@ func testCollectionRemove(t *testing.T, c Collection) {
 func testCollectionAllOps(t *testing.T, colFn func() Collection) {
 	testCollectionBasicOps(t, colFn())
 	testCollectionAdd(t, colFn())
+	testCollectionGetAllFunc(t, colFn())
 	testCollectionRemove(t, colFn())
 }

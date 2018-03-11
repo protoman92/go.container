@@ -9,50 +9,56 @@ type lockConcurrentCollection struct {
 	storage Collection
 }
 
-func (lcc *lockConcurrentCollection) Add(element interface{}) int {
-	lcc.mutex.Lock()
-	defer lcc.mutex.Unlock()
-	return lcc.storage.Add(element)
+func (c *lockConcurrentCollection) Add(element interface{}) int {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return c.storage.Add(element)
 }
 
-func (lcc *lockConcurrentCollection) AddAll(elements ...interface{}) int {
-	lcc.mutex.Lock()
-	defer lcc.mutex.Unlock()
-	return lcc.storage.AddAll(elements...)
+func (c *lockConcurrentCollection) AddAll(elements ...interface{}) int {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return c.storage.AddAll(elements...)
 }
 
-func (lcc *lockConcurrentCollection) Clear() {
-	lcc.mutex.Lock()
-	defer lcc.mutex.Unlock()
-	lcc.storage.Clear()
+func (c *lockConcurrentCollection) Clear() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	c.storage.Clear()
 }
 
-func (lcc *lockConcurrentCollection) Contains(element interface{}) bool {
-	lcc.mutex.RLock()
-	defer lcc.mutex.RUnlock()
-	return lcc.storage.Contains(element)
+func (c *lockConcurrentCollection) Contains(element interface{}) bool {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	return c.storage.Contains(element)
 }
 
-func (lcc *lockConcurrentCollection) ContainsAll(elements ...interface{}) bool {
-	lcc.mutex.RLock()
-	defer lcc.mutex.RUnlock()
-	return lcc.storage.ContainsAll(elements...)
+func (c *lockConcurrentCollection) ContainsAll(elements ...interface{}) bool {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	return c.storage.ContainsAll(elements...)
 }
 
-func (lcc *lockConcurrentCollection) Length() int {
-	lcc.mutex.RLock()
-	defer lcc.mutex.RUnlock()
-	return lcc.storage.Length()
+func (c *lockConcurrentCollection) GetAllFunc(selector func(interface{}) bool) []interface{} {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	return c.storage.GetAllFunc(selector)
 }
 
-func (lcc *lockConcurrentCollection) Remove(element interface{}) int {
-	lcc.mutex.Lock()
-	defer lcc.mutex.Unlock()
-	return lcc.storage.Remove(element)
+func (c *lockConcurrentCollection) Length() int {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+	return c.storage.Length()
 }
 
-func (lcc *lockConcurrentCollection) RemoveAll(elements ...interface{}) int {
-	lcc.mutex.Lock()
-	defer lcc.mutex.Unlock()
-	return lcc.storage.RemoveAll(elements...)
+func (c *lockConcurrentCollection) Remove(element interface{}) int {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return c.storage.Remove(element)
+}
+
+func (c *lockConcurrentCollection) RemoveAll(elements ...interface{}) int {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return c.storage.RemoveAll(elements...)
 }

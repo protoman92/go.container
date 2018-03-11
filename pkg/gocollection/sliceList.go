@@ -9,30 +9,30 @@ type sliceList struct {
 	slice []interface{}
 }
 
-func (sl *sliceList) String() string {
-	return fmt.Sprint(sl.slice)
+func (l *sliceList) String() string {
+	return fmt.Sprint(l.slice)
 }
 
-func (sl *sliceList) Add(element interface{}) int {
-	sl.slice = append(sl.slice, element)
+func (l *sliceList) Add(element interface{}) int {
+	l.slice = append(l.slice, element)
 	return 1
 }
 
-func (sl *sliceList) AddAll(elements ...interface{}) int {
+func (l *sliceList) AddAll(elements ...interface{}) int {
 	for _, element := range elements {
-		sl.slice = append(sl.slice, element)
+		l.slice = append(l.slice, element)
 	}
 
 	return len(elements)
 }
 
-func (sl *sliceList) Clear() {
-	sl.slice = make([]interface{}, 0)
+func (l *sliceList) Clear() {
+	l.slice = make([]interface{}, 0)
 }
 
-func (sl *sliceList) Contains(element interface{}) bool {
-	for ix := range sl.slice {
-		if sl.slice[ix] == element {
+func (l *sliceList) Contains(element interface{}) bool {
+	for ix := range l.slice {
+		if l.slice[ix] == element {
 			return true
 		}
 	}
@@ -40,11 +40,11 @@ func (sl *sliceList) Contains(element interface{}) bool {
 	return false
 }
 
-func (sl *sliceList) ContainsAll(elements ...interface{}) bool {
-	tempMap := make(map[interface{}]bool, len(sl.slice))
+func (l *sliceList) ContainsAll(elements ...interface{}) bool {
+	tempMap := make(map[interface{}]bool, len(l.slice))
 
-	for ix := range sl.slice {
-		element := sl.slice[ix]
+	for ix := range l.slice {
+		element := l.slice[ix]
 
 		if !tempMap[element] {
 			tempMap[element] = true
@@ -60,17 +60,29 @@ func (sl *sliceList) ContainsAll(elements ...interface{}) bool {
 	return true
 }
 
-func (sl *sliceList) GetAt(index int) (interface{}, bool) {
-	if index >= 0 && index < len(sl.slice) {
-		return sl.slice[index], true
+func (l *sliceList) GetAllFunc(selector func(interface{}) bool) []interface{} {
+	results := make([]interface{}, 0)
+
+	for ix := range l.slice {
+		if selector(l.slice[ix]) {
+			results = append(results, l.slice[ix])
+		}
+	}
+
+	return results
+}
+
+func (l *sliceList) GetAt(index int) (interface{}, bool) {
+	if index >= 0 && index < len(l.slice) {
+		return l.slice[index], true
 	}
 
 	return nil, false
 }
 
-func (sl *sliceList) IndexOf(element interface{}) (int, bool) {
-	for ix := range sl.slice {
-		if sl.slice[ix] == element {
+func (l *sliceList) IndexOf(element interface{}) (int, bool) {
+	for ix := range l.slice {
+		if l.slice[ix] == element {
 			return ix, true
 		}
 	}
@@ -78,23 +90,23 @@ func (sl *sliceList) IndexOf(element interface{}) (int, bool) {
 	return -1, false
 }
 
-func (sl *sliceList) Length() int {
-	return len(sl.slice)
+func (l *sliceList) Length() int {
+	return len(l.slice)
 }
 
-func (sl *sliceList) Remove(element interface{}) int {
-	for ix := range sl.slice {
-		e := sl.slice[ix]
+func (l *sliceList) Remove(element interface{}) int {
+	for ix := range l.slice {
+		e := l.slice[ix]
 
 		if e == element {
 			slice1 := make([]interface{}, ix)
-			copy(slice1, sl.slice[:ix])
+			copy(slice1, l.slice[:ix])
 
-			for jx := ix + 1; jx < len(sl.slice); jx++ {
-				slice1 = append(slice1, sl.slice[jx])
+			for jx := ix + 1; jx < len(l.slice); jx++ {
+				slice1 = append(slice1, l.slice[jx])
 			}
 
-			sl.slice = slice1
+			l.slice = slice1
 			return 1
 		}
 	}
@@ -102,26 +114,26 @@ func (sl *sliceList) Remove(element interface{}) int {
 	return 0
 }
 
-func (sl *sliceList) RemoveAt(index int) (interface{}, bool) {
-	e, found := sl.GetAt(index)
+func (l *sliceList) RemoveAt(index int) (interface{}, bool) {
+	e, found := l.GetAt(index)
 
 	if found {
-		length := sl.Length()
+		length := l.Length()
 		first := make([]interface{}, index)
 		second := make([]interface{}, length-index-1)
-		copy(first, sl.slice[:index])
-		copy(second, sl.slice[index+1:])
+		copy(first, l.slice[:index])
+		copy(second, l.slice[index+1:])
 		first = append(first, second...)
-		sl.slice = first
+		l.slice = first
 		return e, found
 	}
 
 	return nil, false
 }
 
-func (sl *sliceList) RemoveAllAt(indexes ...int) int {
+func (l *sliceList) RemoveAllAt(indexes ...int) int {
 	sort.Ints(indexes)
-	length := sl.Length()
+	length := l.Length()
 	lastIndex := 0
 	newSlice := make([]interface{}, 0)
 
@@ -131,23 +143,23 @@ func (sl *sliceList) RemoveAllAt(indexes ...int) int {
 		if index < 0 {
 			continue
 		} else if index < length {
-			newSlice = append(newSlice, sl.slice[lastIndex:index]...)
+			newSlice = append(newSlice, l.slice[lastIndex:index]...)
 			lastIndex = index + 1
 		} else {
 			break
 		}
 	}
 
-	newSlice = append(newSlice, sl.slice[lastIndex:length]...)
-	sl.slice = newSlice
+	newSlice = append(newSlice, l.slice[lastIndex:length]...)
+	l.slice = newSlice
 	return length - len(newSlice)
 }
 
-func (sl *sliceList) RemoveAll(elements ...interface{}) int {
+func (l *sliceList) RemoveAll(elements ...interface{}) int {
 	tempMap := make(map[interface{}][]int, 0)
 
-	for ix := range sl.slice {
-		element := sl.slice[ix]
+	for ix := range l.slice {
+		element := l.slice[ix]
 		indexSlice, found := tempMap[element]
 
 		if !found {
@@ -166,14 +178,14 @@ func (sl *sliceList) RemoveAll(elements ...interface{}) int {
 		}
 	}
 
-	return sl.RemoveAllAt(removables...)
+	return l.RemoveAllAt(removables...)
 }
 
-func (sl *sliceList) SetAt(index int, element interface{}) (interface{}, bool) {
-	prev, found := sl.GetAt(index)
+func (l *sliceList) SetAt(index int, element interface{}) (interface{}, bool) {
+	prev, found := l.GetAt(index)
 
 	if found {
-		sl.slice[index] = element
+		l.slice[index] = element
 		return prev, found
 	}
 
