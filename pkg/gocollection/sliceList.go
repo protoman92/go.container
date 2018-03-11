@@ -72,6 +72,20 @@ func (l *sliceList) GetAllFunc(selector func(interface{}) bool) []interface{} {
 	return results
 }
 
+func (l *sliceList) GetFirst() (interface{}, bool) {
+	return l.GetAt(0)
+}
+
+func (l *sliceList) GetFirstFunc(selector func(interface{}) bool) (interface{}, bool) {
+	for ix := range l.slice {
+		if selector(l.slice[ix]) {
+			return l.slice[ix], true
+		}
+	}
+
+	return nil, false
+}
+
 func (l *sliceList) GetAt(index int) (interface{}, bool) {
 	if index >= 0 && index < len(l.slice) {
 		return l.slice[index], true

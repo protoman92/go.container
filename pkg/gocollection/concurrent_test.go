@@ -139,15 +139,9 @@ func setupConcurrentCollectionOps(params *ConcurrentOpsParams) func() *sync.Wait
 			go func(key interface{}) {
 				time.Sleep(params.opSleepDuration())
 
-				selector := func(e interface{}) bool {
-					if e, ok := e.(int); ok && e%2 == 0 {
-						return true
-					}
-
-					return false
-				}
-
-				if elements := cl.GetAllFunc(selector); params.log {
+				if elements := cl.GetAllFunc(func(e interface{}) bool {
+					return e == key
+				}); params.log {
 					fmt.Printf("Got elements %v\n", elements)
 				}
 

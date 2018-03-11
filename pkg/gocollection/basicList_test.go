@@ -28,6 +28,31 @@ func testListBasicOps(t *testing.T, list List) {
 	fmt.Printf("Final list: %v\n", list)
 }
 
+func testListGetFirst(t *testing.T, list List) {
+	/// Setup & When & Then
+	if first, ok := list.GetFirst(); ok || first != nil {
+		t.Errorf("Should get correct element")
+	}
+
+	list.AddAll(1, 2, 3, 4, 5, 6, 7)
+
+	if first, ok := list.GetFirst(); !ok || first != 1 {
+		t.Errorf("Should get correct element")
+	}
+
+	if first, ok := list.GetFirstFunc(func(e interface{}) bool {
+		return e == 2
+	}); !ok || first != 2 {
+		t.Errorf("Should get correct element")
+	}
+
+	if first, ok := list.GetFirstFunc(func(e interface{}) bool {
+		return e == "Should not exist"
+	}); ok || first != nil {
+		t.Errorf("Should get correct element")
+	}
+}
+
 func testListIndexOf(t *testing.T, list List) {
 	/// Setup & When & Then
 	if index, found := list.IndexOf(0); found || index >= 0 {
@@ -102,6 +127,7 @@ func testListAllOps(t *testing.T, listFn func() List) {
 	})
 
 	testListBasicOps(t, listFn())
+	testListGetFirst(t, listFn())
 	testListIndexOf(t, listFn())
 	testListRemoveAt(t, listFn())
 	testListSetAt(t, listFn())

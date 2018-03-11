@@ -8,7 +8,7 @@ import (
 )
 
 func testListConcurrentOps(tb testing.TB, cl List) {
-	keyCount := 500
+	keyCount := 200
 	keys := make([]interface{}, keyCount)
 
 	for ix := range keys {
@@ -29,6 +29,40 @@ func testListConcurrentOps(tb testing.TB, cl List) {
 	wgAccess := setupConcurrentCollectionOps(params)
 
 	// Get
+	go func() {
+		for ix := range keys {
+			wgAccess().Add(1)
+
+			go func(ix int) {
+				time.Sleep(sleepRandomizer())
+
+				if e, found := cl.GetFirst(); params.log {
+					fmt.Printf("Got first element %v, found: %t\n", e, found)
+				}
+
+				wgAccess().Done()
+			}(ix)
+		}
+	}()
+
+	go func() {
+		for ix := range keys {
+			wgAccess().Add(1)
+
+			go func(key interface{}) {
+				time.Sleep(sleepRandomizer())
+
+				if e, found := cl.GetFirstFunc(func(e interface{}) bool {
+					return e == key
+				}); params.log {
+					fmt.Printf("Got first %v, found: %t\n", e, found)
+				}
+
+				wgAccess().Done()
+			}(keys[ix])
+		}
+	}()
+
 	go func() {
 		for ix := range keys {
 			wgAccess().Add(1)
