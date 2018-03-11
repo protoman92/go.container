@@ -32,7 +32,7 @@ func (l *lockConcurrentList) GetFirst() (interface{}, bool) {
 	return l.list.GetFirst()
 }
 
-func (l *lockConcurrentList) GetFirstFunc(selector func(interface{}) bool) (interface{}, bool) {
+func (l *lockConcurrentList) GetFirstFunc(selector func(int, interface{}) bool) (int, interface{}, bool) {
 	l.mutex.RLock()
 	defer l.mutex.RUnlock()
 	return l.list.GetFirstFunc(selector)
@@ -43,6 +43,12 @@ func (l *lockConcurrentList) IndexOf(element interface{}) (int, bool) {
 	defer l.mutex.RUnlock()
 	index, found := l.list.IndexOf(element)
 	return index, found
+}
+
+func (l *lockConcurrentList) IndexOfFunc(selector func(int, interface{}) bool) (int, interface{}, bool) {
+	l.mutex.RLock()
+	defer l.mutex.RUnlock()
+	return l.list.IndexOfFunc(selector)
 }
 
 func (l *lockConcurrentList) RemoveAt(index int) (interface{}, bool) {

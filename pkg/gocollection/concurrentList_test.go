@@ -52,10 +52,10 @@ func testListConcurrentOps(tb testing.TB, cl List) {
 			go func(key interface{}) {
 				time.Sleep(sleepRandomizer())
 
-				if e, found := cl.GetFirstFunc(func(e interface{}) bool {
+				if ix, e, found := cl.GetFirstFunc(func(ix int, e interface{}) bool {
 					return e == key
 				}); params.log {
-					fmt.Printf("Got first %v, found: %t\n", e, found)
+					fmt.Printf("Got first %v at index %d, found: %t\n", e, ix, found)
 				}
 
 				wgAccess().Done()
@@ -88,6 +88,24 @@ func testListConcurrentOps(tb testing.TB, cl List) {
 
 				if ix, found := cl.IndexOf(key); params.log {
 					fmt.Printf("Got index %d, found: %t\n", ix, found)
+				}
+
+				wgAccess().Done()
+			}(keys[ix])
+		}
+	}()
+
+	go func() {
+		for ix := range keys {
+			wgAccess().Add(1)
+
+			go func(key interface{}) {
+				time.Sleep(sleepRandomizer())
+
+				if ix, e, found := cl.IndexOfFunc(func(ix int, e interface{}) bool {
+					return e == key
+				}); params.log {
+					fmt.Printf("Got index %d with element %v, found: %t\n", ix, e, found)
 				}
 
 				wgAccess().Done()

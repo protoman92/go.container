@@ -40,15 +40,15 @@ func testListGetFirst(t *testing.T, list List) {
 		t.Errorf("Should get correct element")
 	}
 
-	if first, ok := list.GetFirstFunc(func(e interface{}) bool {
+	if ix, first, ok := list.GetFirstFunc(func(ix int, e interface{}) bool {
 		return e == 2
-	}); !ok || first != 2 {
+	}); !ok || ix != 1 || first != 2 {
 		t.Errorf("Should get correct element")
 	}
 
-	if first, ok := list.GetFirstFunc(func(e interface{}) bool {
+	if ix, first, ok := list.GetFirstFunc(func(ix int, e interface{}) bool {
 		return e == "Should not exist"
-	}); ok || first != nil {
+	}); ok || ix >= 0 || first != nil {
 		t.Errorf("Should get correct element")
 	}
 }
@@ -68,6 +68,23 @@ func testListIndexOf(t *testing.T, list List) {
 		if index, found := list.IndexOf(element); !found || index < 0 {
 			t.Errorf("Should have found index")
 		}
+	}
+}
+
+func testListIndexOfFunc(t *testing.T, list List) {
+	/// Setup & When & Then
+	if index, e, found := list.IndexOfFunc(func(ix int, e interface{}) bool {
+		return e == 1
+	}); found || index >= 0 || e != nil {
+		t.Errorf("Should not have found index")
+	}
+
+	list.AddAll(1, 2, 3, 4, 5, 6, 7)
+
+	if index, e, found := list.IndexOfFunc(func(ix int, e interface{}) bool {
+		return e == 1
+	}); !found || index != 0 || e != 1 {
+		t.Errorf("Should find correct index")
 	}
 }
 
@@ -129,6 +146,7 @@ func testListAllOps(t *testing.T, listFn func() List) {
 	testListBasicOps(t, listFn())
 	testListGetFirst(t, listFn())
 	testListIndexOf(t, listFn())
+	testListIndexOfFunc(t, listFn())
 	testListRemoveAt(t, listFn())
 	testListSetAt(t, listFn())
 }

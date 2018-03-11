@@ -4,8 +4,9 @@ package gocollection
 type listExtra interface {
 	GetAt(index int) (interface{}, bool)
 	GetFirst() (interface{}, bool)
-	GetFirstFunc(selector func(interface{}) bool) (interface{}, bool)
+	GetFirstFunc(selector func(int, interface{}) bool) (int, interface{}, bool)
 	IndexOf(element interface{}) (int, bool)
+	IndexOfFunc(selector func(int, interface{}) bool) (int, interface{}, bool)
 	RemoveAt(index int) (interface{}, bool)
 	RemoveAllAt(indexes ...int) int
 	SetAt(index int, element interface{}) (interface{}, bool)

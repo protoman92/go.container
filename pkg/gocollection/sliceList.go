@@ -76,14 +76,14 @@ func (l *sliceList) GetFirst() (interface{}, bool) {
 	return l.GetAt(0)
 }
 
-func (l *sliceList) GetFirstFunc(selector func(interface{}) bool) (interface{}, bool) {
+func (l *sliceList) GetFirstFunc(selector func(int, interface{}) bool) (int, interface{}, bool) {
 	for ix := range l.slice {
-		if selector(l.slice[ix]) {
-			return l.slice[ix], true
+		if selector(ix, l.slice[ix]) {
+			return ix, l.slice[ix], true
 		}
 	}
 
-	return nil, false
+	return -1, nil, false
 }
 
 func (l *sliceList) GetAt(index int) (interface{}, bool) {
@@ -102,6 +102,16 @@ func (l *sliceList) IndexOf(element interface{}) (int, bool) {
 	}
 
 	return -1, false
+}
+
+func (l *sliceList) IndexOfFunc(selector func(int, interface{}) bool) (int, interface{}, bool) {
+	for ix := range l.slice {
+		if selector(ix, l.slice[ix]) {
+			return ix, l.slice[ix], true
+		}
+	}
+
+	return -1, nil, false
 }
 
 func (l *sliceList) Length() int {
